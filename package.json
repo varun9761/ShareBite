@@ -1,0 +1,13 @@
+{
+  "name": "sharebite",
+  "private": true,
+  "version": "0.1.0",
+  "description": "ShareBite full-stack surplus food recovery and NGO tracking platform.",
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "server": "npm run dev --prefix server",
+    "build": "npm run build --prefix client"
+  }
+}
