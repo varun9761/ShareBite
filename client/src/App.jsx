@@ -136,6 +136,7 @@ function App() {
   const [claimModalListing, setClaimModalListing] = useState(null)
   const [ngoConnectTarget, setNgoConnectTarget] = useState(null)
   const [otpVerifyTarget, setOtpVerifyTarget] = useState(null)
+  const [searchPlaceModalOpen, setSearchPlaceModalOpen] = useState(false)
   const [toast, setToast] = useState('')
   const [loading, setLoading] = useState(true)
   const [locating, setLocating] = useState(false)
@@ -187,49 +188,64 @@ function App() {
     }
   }
 
-  // Exact GPS Geolocation Tracking
+  // Exact GPS Geolocation Tracking with multi-tier fallback (Browser GPS -> Server IP Geolocation)
   async function trackExactLocation() {
-    if (!navigator.geolocation) {
-      setToast('Geolocation is not supported by your browser')
-      return
-    }
-
     setLocating(true)
-    setToast('Locating your exact GPS position...')
+    setToast('Locating your live position...')
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude, accuracy } = position.coords
-        try {
-          const geoRes = await api(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`).catch(() => null)
-          const address = geoRes?.address || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
-
-          const newLoc = {
-            lat: latitude,
-            lng: longitude,
-            address,
-            isLiveGPS: true,
-            accuracy: Math.round(accuracy),
-          }
-
-          setUserLocation(newLoc)
-          setToast(`📍 Exact Location locked: ${geoRes?.street || geoRes?.city || 'GPS Position'}`)
-          await refresh(newLoc, radiusKm)
-        } catch (err) {
-          console.error(err)
-          setUserLocation((prev) => ({ ...prev, lat: latitude, lng: longitude, isLiveGPS: true }))
-          await refresh({ lat: latitude, lng: longitude }, radiusKm)
-        } finally {
-          setLocating(false)
+    const getBrowserPosition = () =>
+      new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          return reject(new Error('Geolocation not supported'))
         }
-      },
-      (error) => {
-        setLocating(false)
-        console.warn('Geolocation error:', error)
-        setToast('Could not access live GPS. Using selected preset.')
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    )
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 60000 }
+        )
+      })
+
+    try {
+      let latitude, longitude, accuracy, isGPS = true
+
+      try {
+        const position = await getBrowserPosition()
+        latitude = position.coords.latitude
+        longitude = position.coords.longitude
+        accuracy = Math.round(position.coords.accuracy)
+      } catch (geoErr) {
+        console.warn('Browser GPS unavailable/denied, checking IP location fallback...', geoErr.message)
+        // Fallback to Server IP Geolocation
+        const ipLoc = await api('/api/geocode/ip').catch(() => null)
+        if (!ipLoc || !Number.isFinite(ipLoc.lat) || !Number.isFinite(ipLoc.lng)) {
+          throw new Error('Location detection failed via GPS & IP')
+        }
+        latitude = ipLoc.lat
+        longitude = ipLoc.lng
+        accuracy = 1500
+        isGPS = false
+      }
+
+      const geoRes = await api(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`).catch(() => null)
+      const address = geoRes?.address || geoRes?.displayName || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+
+      const newLoc = {
+        lat: latitude,
+        lng: longitude,
+        address,
+        isLiveGPS: isGPS,
+        accuracy,
+      }
+
+      setUserLocation(newLoc)
+      setToast(`📍 Location locked: ${geoRes?.city || geoRes?.street || (isGPS ? 'GPS Position' : 'Detected Area')}`)
+      await refresh(newLoc, radiusKm)
+    } catch (err) {
+      console.warn('Location detection failed:', err)
+      setToast('Could not detect position. You can search any city or select a preset.')
+    } finally {
+      setLocating(false)
+    }
   }
 
   function handlePresetChange(index) {
@@ -246,6 +262,20 @@ function App() {
       setToast(`Switched area to ${preset.label}`)
       refresh(newLoc, radiusKm)
     }
+  }
+
+  function handleSelectCustomLocation(place) {
+    const newLoc = {
+      lat: place.lat,
+      lng: place.lng,
+      address: place.address || place.displayName,
+      isLiveGPS: true,
+      accuracy: 250,
+    }
+    setUserLocation(newLoc)
+    setSearchPlaceModalOpen(false)
+    setToast(`📍 Location switched to ${place.city || place.displayName.slice(0, 30)}`)
+    refresh(newLoc, radiusKm)
   }
 
   useEffect(() => {
@@ -325,6 +355,7 @@ function App() {
         setTheme={setTheme}
         userLocation={userLocation}
         onTrackGPS={trackExactLocation}
+        onOpenSearchPlace={() => setSearchPlaceModalOpen(true)}
         locating={locating}
       />
 
@@ -373,6 +404,7 @@ function App() {
                 mapFilter={mapFilter}
                 setMapFilter={setMapFilter}
                 onTrackGPS={trackExactLocation}
+                onOpenSearchPlace={() => setSearchPlaceModalOpen(true)}
                 onPresetChange={handlePresetChange}
                 locating={locating}
                 onClaim={claimFood}
@@ -423,6 +455,13 @@ function App() {
         />
       )}
 
+      {searchPlaceModalOpen && (
+        <LocationSearchModal
+          onClose={() => setSearchPlaceModalOpen(false)}
+          onSelect={handleSelectCustomLocation}
+        />
+      )}
+
       {claimModalListing && (
         <ClaimSuccessModal
           listing={claimModalListing}
@@ -454,7 +493,7 @@ function App() {
   )
 }
 
-function AppHeader({ setView, metrics, theme, setTheme, userLocation, onTrackGPS, locating }) {
+function AppHeader({ setView, metrics, theme, setTheme, userLocation, onTrackGPS, onOpenSearchPlace, locating }) {
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200/90 bg-white/95 backdrop-blur-md dark:border-slate-800 dark:bg-[#0E1420]/95">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
@@ -488,7 +527,7 @@ function AppHeader({ setView, metrics, theme, setTheme, userLocation, onTrackGPS
                 ? 'border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/60 dark:text-blue-300'
                 : 'border-slate-300 bg-white text-slate-700 hover:border-emerald-500 dark:border-slate-700 dark:bg-[#131926] dark:text-slate-200'
             }`}
-            title="Click to lock live GPS location"
+            title="Click to detect current live position"
           >
             {locating ? (
               <Loader2 size={14} className="animate-spin text-blue-600" />
@@ -504,6 +543,16 @@ function AppHeader({ setView, metrics, theme, setTheme, userLocation, onTrackGPS
               {userLocation.isLiveGPS ? 'GPS: ' : 'Area: '}
               {userLocation.address}
             </span>
+          </button>
+
+          {/* Search any place button */}
+          <button
+            onClick={onOpenSearchPlace}
+            className="flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 shadow-sm transition hover:border-emerald-500 dark:border-slate-700 dark:bg-[#131926] dark:text-slate-200"
+            title="Search any city or address"
+          >
+            <Search size={14} className="text-emerald-600 dark:text-emerald-400" />
+            <span className="hidden sm:inline">Search City</span>
           </button>
 
           {/* Quick Metrics */}
@@ -647,6 +696,7 @@ function ClaimerDashboard({
   mapFilter,
   setMapFilter,
   onTrackGPS,
+  onOpenSearchPlace,
   onPresetChange,
   locating,
   onClaim,
@@ -695,6 +745,14 @@ function ClaimerDashboard({
             >
               {locating ? <Loader2 size={14} className="animate-spin" /> : <LocateFixed size={14} />}
               {userLocation.isLiveGPS ? 'GPS Active' : 'Track GPS'}
+            </button>
+
+            <button
+              onClick={onOpenSearchPlace}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-800 shadow-sm transition hover:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-200"
+            >
+              <Search size={14} className="text-emerald-600" />
+              <span>Search Place</span>
             </button>
 
             <select
@@ -1140,9 +1198,9 @@ function EnhancedListingMap({ userLocation, listings, ngos, donors, mapFilter, s
         <Marker position={center} icon={userLocationIcon}>
           <Popup>
             <div className="p-1 text-xs">
-              <strong className="block text-sm font-black text-blue-600">📍 You Are Here</strong>
-              <p className="mt-1 text-slate-700">{userLocation.address}</p>
-              {userLocation.isLiveGPS && <span className="font-bold text-blue-600">✓ Live GPS Position</span>}
+              <strong className="block text-sm font-black text-blue-600">📍 Current Area Locked</strong>
+              <p className="mt-1 text-slate-700 font-medium">{userLocation.address}</p>
+              {userLocation.isLiveGPS && <span className="font-bold text-blue-600">✓ Live Geolocation Active</span>}
             </div>
           </Popup>
         </Marker>
@@ -1324,6 +1382,80 @@ function AdminMetric({ icon, label, value }) {
   )
 }
 
+function LocationSearchModal({ onClose, onSelect }) {
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState([])
+  const [loading, setLoading] = useState(false)
+
+  async function handleSearch(e) {
+    e?.preventDefault()
+    if (!query.trim()) return
+    setLoading(true)
+    try {
+      const data = await api(`/api/geocode/search?q=${encodeURIComponent(query.trim())}`)
+      setResults(data || [])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#131926] border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-3 dark:border-slate-800">
+          <div>
+            <h2 className="text-lg font-black text-slate-900 dark:text-white">Search Any City or Neighborhood</h2>
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">Discover surplus food & NGOs anywhere globally.</p>
+          </div>
+          <button onClick={onClose} className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">✕</button>
+        </div>
+
+        <form onSubmit={handleSearch} className="mt-4 flex gap-2">
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="e.g. Indiranagar Bengaluru, Bandra Mumbai, Connaught Place..."
+            className="h-11 flex-1 rounded-xl border border-slate-300 bg-white px-3 text-xs font-bold text-slate-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+            autoFocus
+          />
+          <button
+            type="submit"
+            className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white shadow-md shadow-emerald-600/30 hover:bg-emerald-700"
+          >
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+            Search
+          </button>
+        </form>
+
+        <div className="mt-4 max-h-60 overflow-y-auto space-y-2">
+          {results.length > 0 ? (
+            results.map((r, i) => (
+              <button
+                key={i}
+                onClick={() => onSelect(r)}
+                className="w-full text-left rounded-xl border border-slate-200 p-3 text-xs transition hover:bg-emerald-50 hover:border-emerald-300 dark:border-slate-800 dark:hover:bg-slate-800/80"
+              >
+                <div className="font-black text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <MapPin size={14} className="text-emerald-600" />
+                  {r.city || r.displayName.split(',')[0]}
+                </div>
+                <div className="text-[11px] font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
+                  {r.address}
+                </div>
+              </button>
+            ))
+          ) : query && !loading ? (
+            <div className="text-center py-6 text-xs text-slate-500">No matching localities found. Try typing a broader area or city name.</div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function FoodModal({ userLocation, onClose, onSubmit, onTrackGPS, locating }) {
   const [saving, setSaving] = useState(false)
   const [category, setCategory] = useState('veg')
@@ -1429,7 +1561,7 @@ function FoodModal({ userLocation, onClose, onSubmit, onTrackGPS, locating }) {
                 onClick={applyLiveGPS}
                 className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1 text-xs font-bold text-white shadow-sm"
               >
-                <LocateFixed size={12} /> Use My Current GPS
+                <LocateFixed size={12} /> Use Current Position
               </button>
             </div>
 

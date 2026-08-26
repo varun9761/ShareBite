@@ -6,7 +6,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const { initDatabase, db, distanceKm } = require('./db');
-const { fetchNearbyNGOsFromOSM, reverseGeocode } = require('./services/osmService');
+const { fetchNearbyNGOsFromOSM, reverseGeocode, geocodeSearch, getIpLocation } = require('./services/osmService');
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -263,7 +263,7 @@ app.get('/api/donors/nearby', async (req, res, next) => {
   }
 });
 
-// --- REVERSE GEOCODING (Free OpenStreetMap Nominatim) ---
+// --- GEOCODING & LOCATION SERVICES (Free OpenStreetMap Nominatim & IP fallback) ---
 app.get('/api/geocode/reverse', async (req, res, next) => {
   try {
     const lat = Number(req.query.lat);
@@ -274,6 +274,26 @@ app.get('/api/geocode/reverse', async (req, res, next) => {
 
     const result = await reverseGeocode(lat, lng);
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/geocode/search', async (req, res, next) => {
+  try {
+    const query = req.query.q || '';
+    if (!query.trim()) return res.json([]);
+    const results = await geocodeSearch(query);
+    res.json(results);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/geocode/ip', async (_req, res, next) => {
+  try {
+    const location = await getIpLocation();
+    res.json(location);
   } catch (error) {
     next(error);
   }

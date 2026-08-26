@@ -197,7 +197,110 @@ async function reverseGeocode(lat, lng) {
   }
 }
 
+/**
+ * Forward geocode a search string into coordinates and formatted address.
+ * @param {string} query
+ */
+async function geocodeSearch(query) {
+  if (!query || !query.trim()) return [];
+
+  const cacheKey = `search-${query.toLowerCase().trim()}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'ShareBite-SurplusFoodRecovery/1.0 (info@sharebite.org)',
+        'Accept-Language': 'en',
+      },
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) return [];
+
+    const data = await response.json();
+    const results = data.map((item) => ({
+      displayName: item.display_name,
+      lat: parseFloat(item.lat),
+      lng: parseFloat(item.lon),
+      city: item.address?.city || item.address?.town || item.address?.state_district || item.display_name.split(',')[0],
+      address: item.display_name,
+    }));
+
+    setCache(cacheKey, results);
+    return results;
+  } catch (err) {
+    console.warn(`[Nominatim Search] Search failed: ${err.message}`);
+    return [];
+  }
+}
+
+/**
+ * IP-based geolocation fallback when browser GPS is blocked/unsupported.
+ */
+async function getIpLocation() {
+  const providers = [
+    async () => {
+      const res = await fetch('https://ipwho.is/', { headers: { 'User-Agent': 'ShareBite/1.0' }, signal: AbortSignal.timeout(3500) });
+      if (!res.ok) throw new Error('ipwho non-200');
+      const data = await res.json();
+      if (data.success === false) throw new Error(data.message || 'ipwho failed');
+      return {
+        lat: data.latitude,
+        lng: data.longitude,
+        city: data.city || data.region,
+        address: `${data.city ? data.city + ', ' : ''}${data.region || ''}, ${data.country || 'India'}`.trim(),
+        country: data.country,
+        source: 'IP Geolocation',
+      };
+    },
+    async () => {
+      const res = await fetch('https://freeipapi.com/api/json', { headers: { 'User-Agent': 'ShareBite/1.0' }, signal: AbortSignal.timeout(3500) });
+      if (!res.ok) throw new Error('freeipapi non-200');
+      const data = await res.json();
+      if (!data.latitude || !data.longitude) throw new Error('no coords');
+      return {
+        lat: data.latitude,
+        lng: data.longitude,
+        city: data.cityName || data.regionName,
+        address: `${data.cityName ? data.cityName + ', ' : ''}${data.regionName || ''}, ${data.countryName || 'India'}`.trim(),
+        country: data.countryName,
+        source: 'IP Geolocation',
+      };
+    },
+  ];
+
+  for (const provider of providers) {
+    try {
+      const result = await provider();
+      if (result && Number.isFinite(result.lat) && Number.isFinite(result.lng)) {
+        return result;
+      }
+    } catch (err) {
+      // Continue to next provider
+    }
+  }
+
+  // Fallback to default center (Bengaluru) if IP service fails
+  return {
+    lat: 12.9611,
+    lng: 77.6387,
+    city: 'Bengaluru',
+    address: 'Bengaluru, Karnataka, India',
+    source: 'Default Fallback',
+  };
+}
+
 module.exports = {
   fetchNearbyNGOsFromOSM,
   reverseGeocode,
+  geocodeSearch,
+  getIpLocation,
 };
