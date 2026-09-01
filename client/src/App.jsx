@@ -499,8 +499,8 @@ function AppHeader({ setView, metrics, theme, setTheme, userLocation, onTrackGPS
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between lg:px-6">
         <div className="flex items-center justify-between">
           <button className="group flex items-center gap-3 text-left" onClick={() => setView('claimer')}>
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md shadow-emerald-600/30 transition group-hover:scale-105">
-              <HandHeart size={24} />
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1 ring-1 ring-slate-200/80 shadow-md shadow-emerald-600/10 transition group-hover:scale-105 dark:bg-slate-800 dark:ring-slate-700">
+              <img src="/favicon.png" alt="ShareBite Logo" className="h-full w-full object-contain drop-shadow-sm" />
             </span>
             <span>
               <span className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-900 dark:text-white">
