@@ -671,9 +671,13 @@ const db = {
       );
     }
 
-    // Distance Radius filter
+    // Distance Radius filter: Show listings within radius, or nearest available if outside radius
     if (Number.isFinite(lat) && Number.isFinite(lng) && radiusKm) {
-      listings = listings.filter((l) => l.distanceKm <= radiusKm);
+      const withinRadius = listings.filter((l) => l.distanceKm <= radiusKm);
+      if (withinRadius.length > 0) {
+        listings = withinRadius;
+      }
+      // If none strictly within radiusKm, keep all real listings so user postings are never hidden!
     }
 
     // Sorting
@@ -708,7 +712,7 @@ const db = {
   },
 
   async createListing(payload, donor = null) {
-    const id = `listing-${crypto.randomUUID().slice(0, 8)}`;
+    const id = payload.id || `listing-${crypto.randomUUID().slice(0, 8)}`;
     const donorId = donor?.id || payload.donorId || 'user-donor-1';
     const donorName = donor?.name || payload.donorName || 'Green Bowl Kitchen';
     const donorPhone = donor?.phone || payload.donorPhone || '';
@@ -728,6 +732,7 @@ const db = {
       const res = await pool.query(
         `INSERT INTO listings (id, donor_id, donor_name, donor_phone, food_type, food_category, quantity, quantity_unit, prepared_at, expires_at, status, address, lat, lng, created_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', $11, $12, $13, $14)
+         ON CONFLICT (id) DO UPDATE SET quantity = EXCLUDED.quantity
          RETURNING *;`,
         [id, donorId, donorName, donorPhone, foodType, foodCategory, quantity, quantityUnit, preparedAt, expiresAt, address, lat, lng, createdAt]
       );

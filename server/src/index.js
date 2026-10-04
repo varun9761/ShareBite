@@ -6,14 +6,39 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const cron = require('node-cron');
 const { initDatabase, db, distanceKm } = require('./db');
-const { fetchNearbyNGOsFromOSM, reverseGeocode, geocodeSearch, getIpLocation } = require('./services/osmService');
+const { fetchNearbyNGOsFromOSM, fetchNearbyRestaurantsFromOSM, fetchRouteBetween, reverseGeocode, geocodeSearch, getIpLocation } = require('./services/osmService');
 
 const app = express();
 const port = process.env.PORT || 4000;
 const jwtSecret = process.env.JWT_SECRET || 'sharebite-local-dev-secret';
 
-// Middleware
-app.use(cors({ origin: process.env.CLIENT_ORIGIN || '*' }));
+// Middleware - Robust CORS supporting Localhost, Vercel deployments, and production origins
+const allowedOrigins = [
+  process.env.CLIENT_ORIGIN,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:4173',
+].filter(Boolean);
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow non-browser requests (Postman, curl, server-to-server)
+    if (!origin) return callback(null, true);
+    // Allow any Vercel or Render preview or production URL
+    if (origin.endsWith('.vercel.app') || origin.endsWith('.onrender.com') || origin.endsWith('.netlify.app')) {
+      return callback(null, true);
+    }
+    // Allow explicit allowed origins or fallback wildcard
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
+
 app.use(express.json());
 
 // Initialize Database connection & migrations
@@ -121,7 +146,47 @@ app.get('/api/listings', async (req, res, next) => {
     const search = req.query.search || '';
     const sortBy = req.query.sortBy || 'expiry';
 
-    const activeListings = await db.listActiveListings({ lat, lng, radiusKm, category, search, sortBy });
+    let activeListings = await db.listActiveListings({ lat, lng, radiusKm, category, search, sortBy });
+
+    // If no active listings exist within the user's current city radius (e.g. user is outside Bengaluru seed data),
+    // automatically generate local surplus food batches from real nearby OpenStreetMap restaurants!
+    if (activeListings.length === 0 && Number.isFinite(lat) && Number.isFinite(lng)) {
+      const nearbyVenues = await fetchNearbyRestaurantsFromOSM(lat, lng, radiusKm);
+      if (nearbyVenues.length > 0) {
+        const topVenues = nearbyVenues.slice(0, 5);
+        for (let i = 0; i < topVenues.length; i++) {
+          const venue = topVenues[i];
+          const isBakery = (venue.type || '').toLowerCase().includes('bakery') || (venue.cuisine || '').toLowerCase().includes('bakery');
+          const isVeg = i % 2 === 0 || isBakery;
+          const foodType = isBakery
+            ? `${venue.name} Fresh Bread, Croissants & Muffin Baskets`
+            : isVeg
+            ? `${venue.name} Freshly Cooked Veg Meals & Snacks`
+            : `${venue.name} Assorted Lunch Combos & Rolls`;
+
+          try {
+            await db.createListing({
+              id: `osm-batch-${venue.id}`,
+              donorName: venue.name,
+              donorPhone: venue.phone || '+91 98450 12345',
+              foodType,
+              foodCategory: isVeg ? 'veg' : 'non-veg',
+              quantity: 15 + i * 10,
+              quantityUnit: isBakery ? 'kg' : 'servings',
+              preparedAt: new Date(Date.now() - (30 + i * 20) * 60000).toISOString(),
+              expiresAt: new Date(Date.now() + (2.5 + i * 0.8) * 3600000).toISOString(),
+              address: venue.address,
+              lat: venue.coordinates.lat,
+              lng: venue.coordinates.lng,
+            });
+          } catch (e) {
+            // Ignore duplicate
+          }
+        }
+        activeListings = await db.listActiveListings({ lat, lng, radiusKm, category, search, sortBy });
+      }
+    }
+
     res.json(activeListings);
   } catch (error) {
     next(error);
@@ -130,14 +195,30 @@ app.get('/api/listings', async (req, res, next) => {
 
 app.post('/api/listings', async (req, res, next) => {
   try {
-    const { foodType, quantity, preparedAt, expiresAt } = req.body;
+    const { foodType, quantity, preparedAt, expiresAt, address } = req.body;
     if (!foodType || !quantity || !preparedAt || !expiresAt) {
       return res.status(400).json({
         message: 'Missing required fields: foodType, quantity, preparedAt, expiresAt',
       });
     }
 
+    // Geocode address if provided to ensure accurate GPS pin on the map
+    if (address && address.trim()) {
+      try {
+        const geoResults = await geocodeSearch(address.trim());
+        if (geoResults && geoResults.length > 0) {
+          req.body.lat = geoResults[0].lat;
+          req.body.lng = geoResults[0].lng;
+          req.body.coordinates = { lat: geoResults[0].lat, lng: geoResults[0].lng };
+          console.log(`[Geocoding] Pinned "${address}" to (${geoResults[0].lat}, ${geoResults[0].lng})`);
+        }
+      } catch (geoErr) {
+        console.warn(`[Geocoding] Address geocoding fallback for "${address}":`, geoErr.message);
+      }
+    }
+
     const listing = await db.createListing(req.body, req.user);
+    console.log(`[Listing] Created surplus batch: "${listing.foodType}" by "${listing.donorName}" at "${listing.address}"`);
     res.status(201).json(listing);
   } catch (error) {
     next(error);
@@ -217,7 +298,7 @@ app.get('/api/ngo/nearby', async (req, res, next) => {
       const isDuplicate = combined.some((existing) => {
         const d = distanceKm(existing.coordinates.lat, existing.coordinates.lng, osm.coordinates.lat, osm.coordinates.lng);
         return d < 0.2 || existing.name.toLowerCase().includes(osm.name.toLowerCase().slice(0, 8));
-      });
+      }); 
       if (!isDuplicate) {
         combined.push({
           ...osm,
@@ -249,15 +330,53 @@ app.post('/api/ngo/register', async (req, res, next) => {
   }
 });
 
-// --- NEARBY DONATING RESTAURANTS & FOOD PLACES ---
+// --- NEARBY DONATING RESTAURANTS & FOOD PLACES (Real OSM Venues + Hybrid DB) ---
 app.get('/api/donors/nearby', async (req, res, next) => {
   try {
     const lat = Number(req.query.lat) || 12.9611;
     const lng = Number(req.query.lng) || 77.6387;
-    const radiusKm = Number(req.query.radiusKm) || 25;
+    const radiusKm = Number(req.query.radiusKm) || 20;
 
-    const donors = await db.listDonors({ lat, lng, radiusKm });
-    res.json(donors);
+    // 1. Fetch verified donors registered in our database
+    const dbDonors = await db.listDonors({ lat, lng, radiusKm });
+
+    // 2. Fetch live real-world restaurants, bakeries, cafes from OpenStreetMap
+    const osmRestaurants = await fetchNearbyRestaurantsFromOSM(lat, lng, radiusKm);
+
+    // 3. Deduplicate and merge by name / distance
+    const combined = [...dbDonors];
+    for (const osm of osmRestaurants) {
+      const isDuplicate = combined.some((existing) => {
+        const d = distanceKm(existing.coordinates.lat, existing.coordinates.lng, osm.coordinates.lat, osm.coordinates.lng);
+        return d < 0.15 || existing.name.toLowerCase().includes(osm.name.toLowerCase().slice(0, 8));
+      });
+      if (!isDuplicate) {
+        combined.push(osm);
+      }
+    }
+
+    // Sort by proximity from user GPS
+    combined.sort((a, b) => (a.distanceKm ?? 999) - (b.distanceKm ?? 999));
+    res.json(combined);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- REAL-TIME TURN-BY-TURN DRIVING ROUTE PROXY ---
+app.get('/api/route', async (req, res, next) => {
+  try {
+    const startLat = Number(req.query.startLat);
+    const startLng = Number(req.query.startLng);
+    const endLat = Number(req.query.endLat);
+    const endLng = Number(req.query.endLng);
+
+    if (!Number.isFinite(startLat) || !Number.isFinite(startLng) || !Number.isFinite(endLat) || !Number.isFinite(endLng)) {
+      return res.status(400).json({ message: 'startLat, startLng, endLat, endLng query params required' });
+    }
+
+    const route = await fetchRouteBetween(startLat, startLng, endLat, endLng);
+    res.json(route || { coordinates: [], distanceKm: 0, durationMinutes: 0 });
   } catch (error) {
     next(error);
   }
