@@ -28,37 +28,11 @@ export function RoleSidebar({ view, setView, activeListingsCount, urgentCount })
   ]
 
   return (
-    <aside className="space-y-2">
-      {/* Mobile Touch-Friendly Segmented Control */}
-      <div className="flex lg:hidden items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-[#131926] border border-slate-200 dark:border-slate-800">
-        {navItems.map((item) => {
-          const active = view === item.id
-          return (
-            <button
-              key={item.id}
-              onClick={() => setView(item.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-xs font-black transition-all ${
-                active
-                  ? 'bg-slate-900 text-white shadow-md dark:bg-emerald-600'
-                  : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-              }`}
-            >
-              {item.icon}
-              <span>{item.shortLabel}</span>
-              {item.urgent && !active && (
-                <span className="h-2 w-2 rounded-full bg-rose-500 animate-pulse" />
-              )}
-            </button>
-          )
-        })}
+    <aside className="hidden lg:block space-y-2">
+      <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 py-1">
+        Select Portal Role
       </div>
-
-      {/* Desktop Sidebar Cards */}
-      <div className="hidden lg:block space-y-2">
-        <div className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 px-3 py-1">
-          Select Portal Role
-        </div>
-        <nav className="flex flex-col gap-2">
+      <nav className="flex flex-col gap-2">
           {navItems.map((item) => {
             const active = view === item.id
             return (
@@ -89,7 +63,6 @@ export function RoleSidebar({ view, setView, activeListingsCount, urgentCount })
             )
           })}
         </nav>
-      </div>
     </aside>
   )
 }

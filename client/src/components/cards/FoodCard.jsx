@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Building2,
   Clock,
@@ -13,6 +14,8 @@ import {
   CheckCircle2,
   Truck,
   Utensils,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { generateWhatsAppShareUrl, getGoogleMapsDirectionsUrl, calculateDistanceKm } from '../../api/client'
 import { FoodTypeBadge, StatusBadge, CardStat } from '../ui/Badges'
@@ -21,6 +24,7 @@ import { RescueStepper } from '../ui/RescueStepper'
 import { FreshnessMeter } from '../ui/FreshnessMeter'
 
 export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onSelectRoute, userLocation }) {
+  const [showMobileDetails, setShowMobileDetails] = useState(false)
   const isVeg = listing.foodCategory !== 'non-veg'
   const isUrgent = listing.urgency === 'critical' || listing.urgency === 'urgent'
 
@@ -76,13 +80,30 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
         </div>
       </div>
 
-      {/* Rescue Lifecycle Stepper */}
-      <div className="mt-3">
+      {/* Mobile Expiry Strip & Details Toggle */}
+      <div className="lg:hidden mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+          <Clock size={13} className={isUrgent ? 'animate-pulse text-rose-600' : 'text-emerald-600'} />
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">Safe Until:</span>
+          <Countdown expiresAt={listing.expiresAt} urgent={isUrgent} />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowMobileDetails(!showMobileDetails)}
+          className="flex items-center gap-0.5 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 py-0.5"
+        >
+          <span>{showMobileDetails ? 'Hide details' : 'Timeline & stats'}</span>
+          {showMobileDetails ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+        </button>
+      </div>
+
+      {/* Rescue Lifecycle Stepper (Desktop always, Mobile on expand) */}
+      <div className={`mt-3 ${showMobileDetails ? 'block' : 'hidden'} lg:block`}>
         <RescueStepper status={listing.status} />
       </div>
 
-      {/* Freshness Countdown & Battery Bar */}
-      <div className="mt-3 space-y-1 rounded-xl border border-slate-200/90 bg-slate-50 p-2.5 dark:border-slate-750 dark:bg-[#1A2234]">
+      {/* Freshness Countdown & Battery Bar (Desktop always, Mobile on expand) */}
+      <div className={`mt-3 space-y-1 rounded-xl border border-slate-200/90 bg-slate-50 p-2.5 dark:border-slate-750 dark:bg-[#1A2234] ${showMobileDetails ? 'block' : 'hidden'} lg:block`}>
         <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
           <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
             <Clock size={14} className={isUrgent ? 'animate-pulse text-rose-600' : 'text-emerald-600'} />
@@ -93,8 +114,8 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
         <FreshnessMeter preparedAt={listing.preparedAt} expiresAt={listing.expiresAt} status={listing.status} />
       </div>
 
-      {/* Stats Grid */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
+      {/* Stats Grid (Desktop always, Mobile on expand) */}
+      <div className={`mt-3 grid grid-cols-3 gap-2 ${showMobileDetails ? 'grid' : 'hidden'} lg:grid`}>
         <CardStat label={listing.quantityUnit} value={listing.quantity} icon={<Utensils size={13} className="text-amber-600 dark:text-amber-400" />} />
         <CardStat label="Distance" value={`${liveDistance} km`} icon={<Navigation size={13} className="text-blue-600 dark:text-blue-400" />} />
         <CardStat label="Est. Transit" value={`~${transitMins} min`} icon={<Truck size={13} className="text-emerald-600 dark:text-emerald-400" />} />

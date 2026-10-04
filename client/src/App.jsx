@@ -8,6 +8,8 @@ import { HeroBanner } from './components/layout/HeroBanner'
 import { RoleSidebar } from './components/layout/RoleSidebar'
 import { Toast } from './components/layout/Toast'
 import { AppFooter } from './components/layout/AppFooter'
+import { MobileBottomNav } from './components/layout/MobileBottomNav'
+import { MobilePortalSheet } from './components/modals/MobilePortalSheet'
 
 // Dashboard Views
 import { ClaimerDashboard } from './components/dashboards/ClaimerDashboard'
@@ -59,6 +61,7 @@ export default function App() {
   const [searchPlaceModalOpen, setSearchPlaceModalOpen] = useState(false)
   const [certificateTarget, setCertificateTarget] = useState(null)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const [mobilePortalOpen, setMobilePortalOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem('sharebite-user') || 'null')
@@ -319,20 +322,22 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 py-3 sm:py-4 lg:px-6">
-        {/* Hero Impact Banner */}
-        <HeroBanner
-          metrics={metrics}
-          urgentCount={urgentListingsCount}
-          onOpenPostFood={() => setModalOpen(true)}
-          onExploreNGOs={() => {
-            setView('claimer')
-            setDiscoveryTab('ngo')
-          }}
-        />
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 py-3 sm:py-4 lg:px-6 pb-24 lg:pb-6">
+        {/* Hero Impact Banner (Desktop Only) */}
+        <div className="hidden lg:block">
+          <HeroBanner
+            metrics={metrics}
+            urgentCount={urgentListingsCount}
+            onOpenPostFood={() => setModalOpen(true)}
+            onExploreNGOs={() => {
+              setView('claimer')
+              setDiscoveryTab('ngo')
+            }}
+          />
+        </div>
 
         {/* Main Content Layout */}
-        <section className="mt-4 sm:mt-5 grid gap-4 sm:gap-5 lg:grid-cols-[230px_1fr]">
+        <section className="mt-2 sm:mt-4 lg:mt-5 grid gap-4 sm:gap-5 lg:grid-cols-[230px_1fr]">
           <RoleSidebar
             view={view}
             setView={setView}
@@ -398,14 +403,45 @@ export default function App() {
         </section>
       </div>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button (Desktop Only) */}
       <button
-        className="fixed bottom-6 right-6 z-30 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/40 transition hover:scale-110 active:scale-95"
+        className="hidden lg:flex fixed bottom-6 right-6 z-30 h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/40 transition hover:scale-110 active:scale-95"
         onClick={() => setModalOpen(true)}
         title="Post Surplus Food Batch"
       >
         <Plus size={28} />
       </button>
+
+      {/* Native Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        view={view}
+        setView={setView}
+        mapMode={mapMode}
+        setMapMode={setMapMode}
+        discoveryTab={discoveryTab}
+        setDiscoveryTab={setDiscoveryTab}
+        onOpenPostFood={() => setModalOpen(true)}
+        onOpenPortalSheet={() => setMobilePortalOpen(true)}
+        activeListingsCount={listings.length}
+      />
+
+      {/* Mobile Portal & Account Bottom Sheet */}
+      <MobilePortalSheet
+        isOpen={mobilePortalOpen}
+        onClose={() => setMobilePortalOpen(false)}
+        view={view}
+        setView={setView}
+        currentUser={currentUser}
+        onOpenAuth={() => setAuthModalOpen(true)}
+        onLogout={handleLogout}
+        theme={theme}
+        setTheme={setTheme}
+        metrics={metrics}
+        onOpenHelp={() => {
+          setView('claimer')
+          setToast('💡 Browse meals, tap Claim, and collect with 1-tap Google Maps directions!')
+        }}
+      />
 
       {/* Modals */}
       {modalOpen && (
@@ -470,11 +506,13 @@ export default function App() {
       {toast && <Toast message={toast} onClose={() => setToast('')} />}
       </div>
 
-      {/* Modern Footer with Creator Credits and Mail Us */}
-      <AppFooter
-        onSelectRole={(role) => setView(role)}
-        onOpenAuth={() => setAuthModalOpen(true)}
-      />
+      {/* Modern Footer (Desktop Only) */}
+      <div className="hidden lg:block">
+        <AppFooter
+          onSelectRole={(role) => setView(role)}
+          onOpenAuth={() => setAuthModalOpen(true)}
+        />
+      </div>
     </div>
   )
 }

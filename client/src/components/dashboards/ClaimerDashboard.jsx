@@ -50,8 +50,8 @@ export function ClaimerDashboard({
 }) {
   return (
     <div className="space-y-4">
-      {/* 3-Step Simplified NGO Guide */}
-      <section className="rounded-2xl border border-emerald-200/90 bg-emerald-50/60 p-4 dark:border-emerald-950 dark:bg-emerald-950/20">
+      {/* 3-Step Simplified NGO Guide (Desktop Only) */}
+      <section className="hidden lg:block rounded-2xl border border-emerald-200/90 bg-emerald-50/60 p-4 dark:border-emerald-950 dark:bg-emerald-950/20">
         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-2">
           <Zap size={14} className="text-emerald-600" />
           <span>How NGO Food Rescue Works in 3 Easy Steps</span>
@@ -83,8 +83,8 @@ export function ClaimerDashboard({
         </div>
       </section>
 
-      {/* Discovery Tabs */}
-      <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-sm dark:border-slate-800 dark:bg-[#131926]">
+      {/* Discovery Tabs (Desktop Only - Mobile uses BottomNav) */}
+      <section className="hidden lg:flex items-center justify-between gap-2.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-[#131926]">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full sm:w-auto">
           <DiscoveryTabChip
             active={discoveryTab === 'food'}
@@ -110,9 +110,9 @@ export function ClaimerDashboard({
         </div>
 
         {/* View Mode: List vs Interactive Map */}
-        <div className="flex items-center rounded-xl bg-slate-100 p-1 dark:bg-[#0E1420] w-full sm:w-auto">
+        <div className="flex items-center rounded-xl bg-slate-100 p-1 dark:bg-[#0E1420]">
           <button
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               mapMode === 'list'
                 ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1A2234] dark:text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -122,7 +122,7 @@ export function ClaimerDashboard({
             <LayoutList size={14} /> List View
           </button>
           <button
-            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               mapMode === 'map'
                 ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1A2234] dark:text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -134,8 +134,87 @@ export function ClaimerDashboard({
         </div>
       </section>
 
-      {/* Filter & Search Bar */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-800 dark:bg-[#131926] space-y-3">
+      {/* Mobile Streamlined Search & Quick Chips Bar */}
+      <section className="lg:hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-[#131926] space-y-2.5">
+        <form onSubmit={onSearchSubmit} className="relative flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search food or restaurant..."
+              className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50 pl-9 pr-8 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:border-emerald-500 focus:bg-white focus:outline-none dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-slate-600"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-300"
+            title="Refresh listings"
+          >
+            <RefreshCw size={13} />
+          </button>
+        </form>
+
+        {/* Quick Horizontal Filter Chips */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 scrollbar-none text-[11px] font-bold">
+          <button
+            onClick={() => setCategoryFilter('all')}
+            className={`shrink-0 rounded-xl px-2.5 py-1 transition ${
+              categoryFilter === 'all'
+                ? 'bg-slate-900 text-white dark:bg-emerald-600'
+                : 'bg-slate-100 text-slate-700 dark:bg-[#0E1420] dark:text-slate-300'
+            }`}
+          >
+            🍽️ All ({listings.length})
+          </button>
+          <button
+            onClick={() => setCategoryFilter('veg')}
+            className={`shrink-0 rounded-xl px-2.5 py-1 transition ${
+              categoryFilter === 'veg'
+                ? 'bg-emerald-600 text-white'
+                : 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+            }`}
+          >
+            🥦 Veg
+          </button>
+          <button
+            onClick={() => setCategoryFilter('non-veg')}
+            className={`shrink-0 rounded-xl px-2.5 py-1 transition ${
+              categoryFilter === 'non-veg'
+                ? 'bg-rose-600 text-white'
+                : 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300'
+            }`}
+          >
+            🍖 Non-Veg
+          </button>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="shrink-0 h-6.5 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-800 outline-none dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-200"
+          >
+            <option value="expiry">⏰ Expiry</option>
+            <option value="distance">📍 Distance</option>
+            <option value="quantity">🍽️ Portions</option>
+          </select>
+          <span className="shrink-0 rounded-xl bg-slate-100 dark:bg-[#0E1420] px-2 py-1 text-[10px] text-slate-500 font-mono">
+            {radiusKm}km
+          </span>
+        </div>
+      </section>
+
+      {/* Filter & Search Bar (Desktop Only) */}
+      <section className="hidden lg:block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#131926] space-y-3">
         {/* Row 1: Search, Sort & Refresh */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {/* Search Box */}
