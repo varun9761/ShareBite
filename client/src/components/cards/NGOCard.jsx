@@ -35,17 +35,17 @@ export function NGOCard({ ngo, onConnect }) {
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
+      <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
         <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
           <span>👥 Capacity: <strong>~{ngo.capacity || 400} meals/day</strong></span>
           <span>🕒 {ngo.operatingHours || '09:00 - 21:00'}</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           {ngo.contactPhone && (
             <a
               href={`tel:${ngo.contactPhone}`}
-              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
+              className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
             >
               <Phone size={13} />
               Call
@@ -56,14 +56,14 @@ export function NGOCard({ ngo, onConnect }) {
             href={directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
+            className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
           >
             <Navigation size={13} />
             Directions
           </a>
 
           <button
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 active:scale-95"
+            className="col-span-2 sm:col-auto flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 sm:py-1.5 font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 active:scale-95"
             onClick={() => onConnect(ngo)}
           >
             <HeartHandshake size={14} />

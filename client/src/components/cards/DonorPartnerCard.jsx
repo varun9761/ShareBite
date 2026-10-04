@@ -43,17 +43,17 @@ export function DonorPartnerCard({ donor, userLocation, onSelectAsDonor }) {
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
+      <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
         <div className="flex items-center gap-3 text-slate-600 dark:text-slate-400">
           <span>⭐ Rating: <strong>{donor.rating || '4.8 ★'}</strong></span>
           <span>📦 <strong>{donor.totalDonations || 24}+</strong> rescued batches</span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
           {donor.phone && (
             <a
               href={`tel:${donor.phone}`}
-              className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
+              className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
             >
               <Phone size={13} />
               Call Venue
@@ -64,7 +64,7 @@ export function DonorPartnerCard({ donor, userLocation, onSelectAsDonor }) {
             href={directionsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
+            className="flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-2 sm:py-1.5 font-bold text-slate-700 hover:bg-slate-50 transition dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300"
           >
             <Navigation size={13} />
             Directions
@@ -73,7 +73,7 @@ export function DonorPartnerCard({ donor, userLocation, onSelectAsDonor }) {
           {onSelectAsDonor && (
             <button
               onClick={() => onSelectAsDonor(donor)}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-1.5 font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-emerald-700 active:scale-95"
+              className="col-span-2 sm:col-auto flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 sm:py-1.5 font-bold text-white shadow-md shadow-emerald-600/25 transition hover:bg-emerald-700 active:scale-95"
             >
               Post Food for this Restaurant
             </button>

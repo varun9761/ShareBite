@@ -84,35 +84,35 @@ export function ClaimerDashboard({
       </section>
 
       {/* Discovery Tabs */}
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-[#131926]">
-        <div className="flex flex-wrap items-center gap-2">
+      <section className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-sm dark:border-slate-800 dark:bg-[#131926]">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none w-full sm:w-auto">
           <DiscoveryTabChip
             active={discoveryTab === 'food'}
             onClick={() => setDiscoveryTab('food')}
             icon={<Utensils size={15} />}
-            label="Surplus Food Batches"
+            label="Food Batches"
             count={listings.length}
           />
           <DiscoveryTabChip
             active={discoveryTab === 'donors'}
             onClick={() => setDiscoveryTab('donors')}
             icon={<Building2 size={15} />}
-            label="Real Restaurants & Bakeries"
+            label="Restaurants"
             count={donors.length}
           />
           <DiscoveryTabChip
             active={discoveryTab === 'ngo'}
             onClick={() => setDiscoveryTab('ngo')}
             icon={<HandHeart size={15} />}
-            label="Partner NGOs & Shelters"
+            label="NGOs"
             count={ngos.length}
           />
         </div>
 
         {/* View Mode: List vs Interactive Map */}
-        <div className="flex items-center rounded-xl bg-slate-100 p-1 dark:bg-[#0E1420]">
+        <div className="flex items-center rounded-xl bg-slate-100 p-1 dark:bg-[#0E1420] w-full sm:w-auto">
           <button
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               mapMode === 'list'
                 ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1A2234] dark:text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -122,7 +122,7 @@ export function ClaimerDashboard({
             <LayoutList size={14} /> List View
           </button>
           <button
-            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+            className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition ${
               mapMode === 'map'
                 ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1A2234] dark:text-white'
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -135,9 +135,9 @@ export function ClaimerDashboard({
       </section>
 
       {/* Filter & Search Bar */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-[#131926] space-y-3.5">
+      <section className="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 shadow-sm dark:border-slate-800 dark:bg-[#131926] space-y-3">
         {/* Row 1: Search, Sort & Refresh */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
           {/* Search Box */}
           <form onSubmit={onSearchSubmit} className="relative flex-1">
             <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -159,22 +159,22 @@ export function ClaimerDashboard({
             )}
           </form>
 
-          {/* Sort Dropdown */}
-          <div className="flex items-center gap-2">
+          {/* Sort Dropdown & Refresh */}
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="h-10 rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-200 cursor-pointer transition"
+              className="h-10 flex-1 sm:flex-none rounded-xl border border-slate-200 bg-slate-50 px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-200 cursor-pointer transition min-w-0"
             >
-              <option value="expiry">⏰ Sort: Expiry (Urgent first)</option>
-              <option value="distance">📍 Sort: Nearest Distance</option>
-              <option value="quantity">🍽️ Sort: Largest Portions</option>
+              <option value="expiry">⏰ Expiry (Urgent)</option>
+              <option value="distance">📍 Distance (Nearest)</option>
+              <option value="quantity">🍽️ Portions (Largest)</option>
             </select>
 
             {/* Refresh Button */}
             <button
               onClick={onRefresh}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 active:scale-95 transition dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-300 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 active:scale-95 transition dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-300 dark:hover:bg-emerald-950/40 dark:hover:text-emerald-300"
               title="Refresh live listings"
             >
               <RefreshCw size={15} />
@@ -183,12 +183,12 @@ export function ClaimerDashboard({
         </div>
 
         {/* Row 2: Dietary Filter & Dedicated Radius Slider */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800/80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-slate-100 pt-2.5 dark:border-slate-800/80">
           {/* Dietary Buttons */}
-          <div className="flex items-center gap-1.5 rounded-xl bg-slate-100 p-1 dark:bg-[#0E1420] overflow-x-auto">
+          <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-[#0E1420] w-full sm:w-auto">
             <button
               onClick={() => setCategoryFilter('all')}
-              className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                 categoryFilter === 'all'
                   ? 'bg-white text-slate-900 shadow-sm dark:bg-[#1A2234] dark:text-white'
                   : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
@@ -198,17 +198,17 @@ export function ClaimerDashboard({
             </button>
             <button
               onClick={() => setCategoryFilter('veg')}
-              className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                 categoryFilter === 'veg'
                   ? 'bg-emerald-600 text-white shadow-sm dark:bg-emerald-600 dark:text-white'
                   : 'text-slate-600 hover:text-emerald-700 dark:text-slate-400 dark:hover:text-emerald-300'
               }`}
             >
-              🥦 Pure Veg
+              🥦 Veg
             </button>
             <button
               onClick={() => setCategoryFilter('non-veg')}
-              className={`whitespace-nowrap rounded-lg px-3.5 py-1.5 text-xs font-bold transition ${
+              className={`flex-1 sm:flex-initial text-center justify-center rounded-lg px-3 py-1.5 text-xs font-bold transition ${
                 categoryFilter === 'non-veg'
                   ? 'bg-rose-600 text-white shadow-sm dark:bg-rose-600 dark:text-white'
                   : 'text-slate-600 hover:text-rose-700 dark:text-slate-400 dark:hover:text-rose-300'
@@ -219,9 +219,9 @@ export function ClaimerDashboard({
           </div>
 
           {/* Distance Slider with clear label & badge */}
-          <div className="flex items-center gap-3 bg-slate-50 dark:bg-[#0E1420] px-3.5 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
+          <div className="flex items-center justify-between sm:justify-start gap-2.5 bg-slate-50 dark:bg-[#0E1420] px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-800 w-full sm:w-auto">
             <span className="text-xs font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">
-              Search Radius:
+              Radius:
             </span>
             <input
               type="range"
@@ -229,7 +229,7 @@ export function ClaimerDashboard({
               max="40"
               value={radiusKm}
               onChange={(e) => setRadiusKm(Number(e.target.value))}
-              className="h-1.5 w-32 sm:w-44 cursor-pointer appearance-none rounded-lg bg-slate-200 accent-emerald-600 dark:bg-slate-700"
+              className="h-1.5 flex-1 sm:w-40 cursor-pointer appearance-none rounded-lg bg-slate-200 accent-emerald-600 dark:bg-slate-700"
             />
             <span className="inline-flex items-center rounded-lg bg-emerald-50 px-2 py-0.5 text-xs font-mono font-black text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800 whitespace-nowrap">
               {radiusKm} km

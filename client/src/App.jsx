@@ -319,7 +319,7 @@ export default function App() {
           onLogout={handleLogout}
         />
 
-      <div className="mx-auto w-full max-w-7xl px-4 py-4 lg:px-6">
+      <div className="mx-auto w-full max-w-7xl px-3 sm:px-4 py-3 sm:py-4 lg:px-6">
         {/* Hero Impact Banner */}
         <HeroBanner
           metrics={metrics}
@@ -332,7 +332,7 @@ export default function App() {
         />
 
         {/* Main Content Layout */}
-        <section className="mt-5 grid gap-5 lg:grid-cols-[230px_1fr]">
+        <section className="mt-4 sm:mt-5 grid gap-4 sm:gap-5 lg:grid-cols-[230px_1fr]">
           <RoleSidebar
             view={view}
             setView={setView}

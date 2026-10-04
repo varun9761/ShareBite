@@ -38,9 +38,9 @@ export function EnhancedListingMap({
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-xl dark:border-slate-850">
       {/* Floating Filter Controls on Map */}
-      <div className="absolute left-4 top-4 z-[1000] flex flex-wrap items-center gap-1.5 rounded-2xl bg-white/95 p-1.5 shadow-xl backdrop-blur-md dark:bg-[#0E1420]/95">
+      <div className="absolute left-2.5 top-2.5 right-2.5 sm:right-auto sm:left-4 sm:top-4 z-[1000] flex items-center gap-1.5 rounded-2xl bg-white/95 p-1.5 shadow-xl backdrop-blur-md dark:bg-[#0E1420]/95 overflow-x-auto scrollbar-none">
         <button
-          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+          className={`shrink-0 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black transition ${
             mapFilter === 'all'
               ? 'bg-slate-900 text-white dark:bg-emerald-600'
               : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
@@ -50,7 +50,7 @@ export function EnhancedListingMap({
           All ({listings.length + ngos.length + donors.length})
         </button>
         <button
-          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+          className={`shrink-0 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black transition ${
             mapFilter === 'food'
               ? 'bg-amber-600 text-white'
               : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
@@ -60,17 +60,17 @@ export function EnhancedListingMap({
           🍲 Food ({listings.length})
         </button>
         <button
-          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+          className={`shrink-0 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black transition ${
             mapFilter === 'donors'
               ? 'bg-emerald-600 text-white'
               : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
           }`}
           onClick={() => setMapFilter('donors')}
         >
-          🍽️ Real Restaurants ({donors.length})
+          🍽️ Venues ({donors.length})
         </button>
         <button
-          className={`rounded-xl px-3 py-1.5 text-xs font-black transition ${
+          className={`shrink-0 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black transition ${
             mapFilter === 'ngo'
               ? 'bg-blue-600 text-white'
               : 'text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
@@ -101,7 +101,7 @@ export function EnhancedListingMap({
         center={center}
         zoom={13}
         scrollWheelZoom={false}
-        className="h-[560px] w-full"
+        className="h-[420px] sm:h-[560px] w-full"
       >
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

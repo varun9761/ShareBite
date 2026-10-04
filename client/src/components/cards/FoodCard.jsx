@@ -101,22 +101,22 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
       </div>
 
       {/* Action Footer */}
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
+      <div className="mt-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-t border-slate-100 pt-2.5 text-xs dark:border-slate-800">
         <span className="flex items-center gap-1 font-bold text-emerald-800 dark:text-emerald-400">
           <Leaf size={13} /> Avoids ~{listing.co2AvoidedKg} kg CO₂
         </span>
 
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5 w-full sm:w-auto">
           {/* WhatsApp Volunteer Dispatch */}
           <a
             href={generateWhatsAppShareUrl(listing)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-600"
+            className="flex items-center justify-center gap-1 rounded-xl bg-emerald-50 px-2.5 py-2 sm:py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-600 hover:text-white dark:bg-emerald-950/60 dark:text-emerald-300 dark:hover:bg-emerald-600"
             title="Share to Volunteer WhatsApp Group"
           >
             <MessageCircle size={13} />
-            WhatsApp
+            <span>WhatsApp</span>
           </a>
 
           {/* Turn-by-Turn Directions */}
@@ -124,27 +124,28 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
             href={getGoogleMapsDirectionsUrl(listing, userLocation)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 rounded-xl bg-blue-50 px-2.5 py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-600 hover:text-white dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-600"
+            className="flex items-center justify-center gap-1 rounded-xl bg-blue-50 px-2.5 py-2 sm:py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-600 hover:text-white dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-600"
             title="Turn-by-Turn Driving Directions on Google Maps"
           >
             <Navigation size={13} />
-            Directions
+            <span>Directions</span>
           </a>
 
           {/* Direct Phone Call */}
           {listing.donorPhone && (
             <a
               href={`tel:${listing.donorPhone}`}
-              className="inline-flex items-center rounded-xl bg-slate-100 p-1.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+              className="col-span-2 sm:col-auto flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 sm:py-1.5 px-2.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
               title={`Call ${listing.donorPhone}`}
             >
               <Phone size={13} />
+              <span className="sm:hidden">Call Donor</span>
             </a>
           )}
 
           {!donorMode && listing.status === 'pending' && (
             <button
-              className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-3.5 py-1.5 text-xs font-black text-white shadow-md shadow-orange-500/25 transition hover:brightness-110 active:scale-95"
+              className="col-span-2 sm:col-auto flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2 sm:py-1.5 text-xs font-black text-white shadow-md shadow-orange-500/25 transition hover:brightness-110 active:scale-95"
               onClick={() => onClaim(listing.id)}
             >
               <HandHeart size={14} />
@@ -154,7 +155,7 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
 
           {donorMode && listing.status === 'claimed' && (
             <button
-              className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700"
+              className="col-span-2 sm:col-auto flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 sm:py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700"
               onClick={() => onVerifyOTP(listing)}
             >
               <ShieldCheck size={14} />
@@ -163,7 +164,7 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
           )}
 
           {donorMode && listing.status === 'picked_up' && (
-            <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="col-span-2 sm:col-auto flex items-center justify-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 py-1">
               <CheckCircle2 size={15} /> Rescued
             </span>
           )}
