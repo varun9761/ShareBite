@@ -140,20 +140,22 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
             <span>WhatsApp</span>
           </a>
 
-          {/* Turn-by-Turn Directions */}
-          <a
-            href={getGoogleMapsDirectionsUrl(listing, userLocation)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-1 rounded-xl bg-blue-50 px-2.5 py-2 sm:py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-600 hover:text-white dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-600"
-            title="Turn-by-Turn Driving Directions on Google Maps"
-          >
-            <Navigation size={13} />
-            <span>Directions</span>
-          </a>
+          {/* Turn-by-Turn Directions (For claimers/volunteers) */}
+          {!donorMode && (
+            <a
+              href={getGoogleMapsDirectionsUrl(listing, userLocation)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1 rounded-xl bg-blue-50 px-2.5 py-2 sm:py-1.5 text-[11px] font-bold text-blue-700 transition hover:bg-blue-600 hover:text-white dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-600"
+              title="Turn-by-Turn Driving Directions on Google Maps"
+            >
+              <Navigation size={13} />
+              <span>Directions</span>
+            </a>
+          )}
 
-          {/* Direct Phone Call */}
-          {listing.donorPhone && (
+          {/* Direct Phone Call (For claimers to call donor) */}
+          {!donorMode && listing.donorPhone && (
             <a
               href={`tel:${listing.donorPhone}`}
               className="col-span-2 sm:col-auto flex items-center justify-center gap-1 rounded-xl bg-slate-100 py-2 sm:py-1.5 px-2.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
@@ -174,9 +176,15 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
             </button>
           )}
 
+          {donorMode && listing.status === 'pending' && (
+            <span className="flex items-center justify-center gap-1 rounded-xl bg-amber-50 px-2.5 py-1.5 text-[11px] font-bold text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+              ⏳ Awaiting NGO
+            </span>
+          )}
+
           {donorMode && listing.status === 'claimed' && (
             <button
-              className="col-span-2 sm:col-auto flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 sm:py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700"
+              className="col-span-2 sm:col-auto flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 sm:py-1.5 text-xs font-bold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 active:scale-95"
               onClick={() => onVerifyOTP(listing)}
             >
               <ShieldCheck size={14} />
@@ -185,7 +193,7 @@ export function FoodCard({ listing, onClaim, donorMode = false, onVerifyOTP, onS
           )}
 
           {donorMode && listing.status === 'picked_up' && (
-            <span className="col-span-2 sm:col-auto flex items-center justify-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 py-1">
+            <span className="flex items-center justify-center gap-1 font-bold text-emerald-700 dark:text-emerald-400 py-1 text-xs">
               <CheckCircle2 size={15} /> Rescued
             </span>
           )}
