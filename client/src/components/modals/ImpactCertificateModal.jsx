@@ -19,7 +19,7 @@ export function ImpactCertificateModal({ target, metrics, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/70 p-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#131926] border border-slate-200 dark:border-slate-800">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 no-print">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-600 dark:text-slate-400">

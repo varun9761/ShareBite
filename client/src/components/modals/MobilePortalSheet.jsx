@@ -37,7 +37,7 @@ export function MobilePortalSheet({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 backdrop-blur-sm lg:hidden animate-fade-in">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center bg-slate-950/60 backdrop-blur-sm lg:hidden animate-fade-in">
       <div
         className="w-full max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-[#131926]"
         onClick={(e) => e.stopPropagation()}

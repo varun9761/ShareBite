@@ -15,7 +15,7 @@ export function OTPVerifyModal({ listing, onClose, onVerify }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#131926] border border-slate-200 dark:border-slate-800 text-center">
         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
           <ShieldCheck size={28} />

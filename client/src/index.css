@@ -33,8 +33,25 @@ html.dark body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
+  box-sizing: border-box;
+}
+
+input,
+select,
+textarea {
+  max-width: 100%;
+  min-width: 0;
+}
+
+input[type="datetime-local"] {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
 }
 
 button {

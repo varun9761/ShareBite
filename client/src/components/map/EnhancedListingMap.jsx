@@ -38,7 +38,7 @@ export function EnhancedListingMap({
   return (
     <div className="relative overflow-hidden rounded-3xl border border-slate-200 shadow-xl dark:border-slate-850">
       {/* Floating Filter Controls on Map */}
-      <div className="absolute left-2.5 top-2.5 right-2.5 sm:right-auto sm:left-4 sm:top-4 z-[1000] flex items-center gap-1.5 rounded-2xl bg-white/95 p-1.5 shadow-xl backdrop-blur-md dark:bg-[#0E1420]/95 overflow-x-auto scrollbar-none">
+      <div className="absolute left-2.5 top-2.5 right-2.5 sm:right-auto sm:left-4 sm:top-4 z-20 flex items-center gap-1.5 rounded-2xl bg-white/95 p-1.5 shadow-xl backdrop-blur-md dark:bg-[#0E1420]/95 overflow-x-auto scrollbar-none">
         <button
           className={`shrink-0 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black transition ${
             mapFilter === 'all'
@@ -83,7 +83,7 @@ export function EnhancedListingMap({
 
       {/* Active Route Banner */}
       {activeRoute && (
-        <div className="absolute bottom-4 left-4 right-4 z-[1000] flex items-center justify-between gap-3 rounded-2xl bg-slate-900/95 px-4 py-2.5 text-xs font-bold text-white shadow-2xl backdrop-blur-md sm:left-auto sm:right-4 sm:w-auto">
+        <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between gap-3 rounded-2xl bg-slate-900/95 px-4 py-2.5 text-xs font-bold text-white shadow-2xl backdrop-blur-md sm:left-auto sm:right-4 sm:w-auto">
           <div className="flex items-center gap-2">
             <Route size={16} className="text-emerald-400" />
             <span>Direct Vector to: <strong>{activeRoute.title}</strong></span>

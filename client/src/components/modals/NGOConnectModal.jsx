@@ -4,7 +4,7 @@ export function NGOConnectModal({ ngo, onClose, onOpenPostFood }) {
   const directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${ngo.name}, ${ngo.address}`)}`
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl dark:bg-[#131926] border border-slate-200 dark:border-slate-800">
         <div className="flex items-start justify-between">
           <div>

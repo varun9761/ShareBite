@@ -76,10 +76,10 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-2xl dark:border-slate-800 dark:bg-[#131926] my-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/75 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-4 sm:p-5 shadow-2xl dark:border-slate-800 dark:bg-[#131926] my-auto overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center justify-between pb-2.5 sm:pb-3 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-1.5">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
               <Sparkles size={14} />
@@ -102,11 +102,11 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-2.5 space-y-2 sm:space-y-2.5">
+        <form onSubmit={handleSubmit} className="mt-3 space-y-2.5 w-full min-w-0">
           {/* STEP 1: Venue & Phone Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <div className="flex items-center justify-between mb-0.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full min-w-0">
+            <div className="min-w-0">
+              <div className="flex items-center justify-between mb-1 min-w-0">
                 <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                   Restaurant / Venue:
                 </label>
@@ -124,7 +124,7 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
                 <select
                   value={selectedRestaurantId}
                   onChange={(e) => handleSelectRestaurant(e.target.value)}
-                  className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                  className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
                 >
                   <option value="">-- Choose local venue --</option>
                   {nearbyRestaurants.map((r) => (
@@ -140,13 +140,13 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
                   onChange={(e) => setDonorName(e.target.value)}
                   placeholder="e.g. Green Bowl Kitchen"
                   required
-                  className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                  className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
                 />
               )}
             </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+            <div className="min-w-0">
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Contact Phone:
               </label>
               <input
@@ -154,14 +154,14 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
                 value={donorPhone}
                 onChange={(e) => setDonorPhone(e.target.value)}
                 placeholder="+91 98450 12345"
-                className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
               />
             </div>
           </div>
 
           {/* STEP 2: Food Description */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+          <div className="w-full min-w-0">
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
               Food Description &amp; Dishes:
             </label>
             <input
@@ -170,12 +170,12 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
               onChange={(e) => setFoodType(e.target.value)}
               placeholder="e.g. 35 Portions Veg Meals (Rice, Dal, Subzi)"
               required
-              className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+              className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
             />
           </div>
 
           {/* STEP 3: Category Toggle with Bold Red Non-Veg Accent */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 w-full min-w-0">
             <CategoryToggle
               active={foodCategory === 'veg'}
               name="modalCategory"
@@ -195,9 +195,9 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
           </div>
 
           {/* STEP 4: Quantity & Unit */}
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+          <div className="grid grid-cols-2 gap-2 w-full min-w-0">
+            <div className="min-w-0">
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Quantity:
               </label>
               <input
@@ -206,17 +206,17 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 required
-                className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
               />
             </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+            <div className="min-w-0">
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
                 Unit:
               </label>
               <select
                 value={quantityUnit}
                 onChange={(e) => setQuantityUnit(e.target.value)}
-                className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
               >
                 <option value="servings">Portions / Servings</option>
                 <option value="kg">Kilograms (kg)</option>
@@ -227,23 +227,23 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
           </div>
 
           {/* STEP 5: Safe Expiry Window */}
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
+          <div className="w-full min-w-0">
+            <div className="flex items-center justify-between mb-1 min-w-0">
               <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                 Safe Expiry (Must pickup before):
               </label>
-              <div className="flex gap-1">
+              <div className="flex gap-1 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleQuickExpiry(2)}
-                  className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 >
                   +2h
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickExpiry(4)}
-                  className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
+                  className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 >
                   +4h
                 </button>
@@ -254,20 +254,20 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
               required
-              className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+              className="h-9 w-full max-w-full min-w-0 box-border block rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
             />
           </div>
 
           {/* STEP 6: Pickup Address with Instant GPS Auto-fill */}
-          <div>
-            <div className="flex items-center justify-between mb-0.5">
+          <div className="w-full min-w-0">
+            <div className="flex items-center justify-between mb-1 min-w-0">
               <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
                 Pickup Address:
               </label>
               <button
                 type="button"
                 onClick={handleApplyLiveLocation}
-                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline dark:text-emerald-400"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline dark:text-emerald-400 shrink-0"
               >
                 <LocateFixed size={11} /> Auto-fill GPS
               </button>
@@ -278,7 +278,7 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
               onChange={(e) => setAddress(e.target.value)}
               placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru"
               required
-              className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+              className="h-9 w-full max-w-full min-w-0 box-border rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
             />
           </div>
 
@@ -286,7 +286,7 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
           <button
             type="submit"
             disabled={submitting}
-            className={`mt-2 flex h-10 sm:h-11 w-full items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-black text-white shadow-md transition ${
+            className={`mt-2.5 flex h-10 sm:h-11 w-full max-w-full min-w-0 box-border items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-black text-white shadow-md transition ${
               submitting
                 ? 'bg-emerald-700/80 cursor-not-allowed opacity-80'
                 : 'bg-emerald-600 hover:bg-emerald-700 active:scale-98 shadow-emerald-600/30'

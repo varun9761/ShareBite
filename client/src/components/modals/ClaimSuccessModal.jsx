@@ -24,7 +24,7 @@ export function ClaimSuccessModal({ listing, onClose }) {
   const volunteerWhatsAppUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(volunteerMsg)}`
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] grid place-items-center bg-slate-950/60 p-4 backdrop-blur-sm">
       <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-2xl dark:border-slate-800 dark:bg-[#131926]">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
           <Check size={32} />
