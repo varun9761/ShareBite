@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Building2, MapPin, LocateFixed, Clock, Utensils, Sparkles, Check } from 'lucide-react'
+import { X, Building2, MapPin, LocateFixed, Clock, Utensils, Sparkles, Check, Loader2, Leaf, Beef } from 'lucide-react'
 import { toDatetimeLocal } from '../../api/client'
 import { CategoryToggle } from '../ui/Badges'
 
@@ -21,6 +21,7 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
   const [expiresAt, setExpiresAt] = useState(toDatetimeLocal(defaultExpiry))
   const [address, setAddress] = useState(userLocation.address || '')
   const [coords, setCoords] = useState({ lat: userLocation.lat, lng: userLocation.lng })
+  const [submitting, setSubmitting] = useState(false)
 
   function handleSelectRestaurant(id) {
     setSelectedRestaurantId(id)
@@ -43,215 +44,206 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
     setExpiresAt(toDatetimeLocal(d))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
+    if (submitting) return
     if (!foodType.trim() || !quantity || !expiresAt) {
       alert('Please provide food description, quantity, and safe expiry window.')
       return
     }
 
-    onSubmit({
-      donorName: donorName.trim() || 'Community Donor',
-      donorPhone: donorPhone.trim(),
-      foodType: foodType.trim(),
-      foodCategory,
-      quantity: Number(quantity),
-      quantityUnit,
-      preparedAt,
-      expiresAt,
-      address: address.trim() || 'Address registered on pickup',
-      coordinates: coords,
-      lat: coords.lat,
-      lng: coords.lng,
-    })
+    setSubmitting(true)
+    try {
+      await onSubmit({
+        donorName: donorName.trim() || 'Community Donor',
+        donorPhone: donorPhone.trim(),
+        foodType: foodType.trim(),
+        foodCategory,
+        quantity: Number(quantity),
+        quantityUnit,
+        preparedAt,
+        expiresAt,
+        address: address.trim() || 'Address registered on pickup',
+        coordinates: coords,
+        lat: coords.lat,
+        lng: coords.lng,
+      })
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-3 sm:p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-xl rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-2xl dark:border-slate-800 dark:bg-[#131926] my-4 sm:my-8 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/70 p-2 sm:p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-lg rounded-2xl sm:rounded-3xl border border-slate-200 bg-white p-3.5 sm:p-5 shadow-2xl dark:border-slate-800 dark:bg-[#131926] my-auto">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              <Sparkles size={12} /> Food Recovery Portal
+        <div className="flex items-center justify-between pb-2 sm:pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+              <Sparkles size={14} />
             </span>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white">Post Surplus Food Batch</h2>
+            <div>
+              <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
+                Post Surplus Food Batch
+              </h2>
+              <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                Live OpenStreetMap Broadcast
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-xl bg-slate-100 p-2 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
+            disabled={submitting}
+            className="rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 transition"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-          {/* STEP 1: Restaurant Identity */}
-          <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-4 dark:border-emerald-950 dark:bg-emerald-950/20 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
-                1. Restaurant / Food Business
-              </span>
-              <div className="flex gap-1 text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setUseExistingRestaurant(false)}
-                  className={`px-2.5 py-1 rounded-lg transition ${
-                    !useExistingRestaurant
-                      ? 'bg-emerald-700 text-white'
-                      : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900'
-                  }`}
-                >
-                  Type Name
-                </button>
+        <form onSubmit={handleSubmit} className="mt-2.5 space-y-2 sm:space-y-2.5">
+          {/* STEP 1: Venue & Phone Row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <div className="flex items-center justify-between mb-0.5">
+                <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                  Restaurant / Venue:
+                </label>
                 {nearbyRestaurants.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setUseExistingRestaurant(true)}
-                    className={`px-2.5 py-1 rounded-lg transition ${
-                      useExistingRestaurant
-                        ? 'bg-emerald-700 text-white'
-                        : 'text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900'
-                    }`}
+                    onClick={() => setUseExistingRestaurant(!useExistingRestaurant)}
+                    className="text-[10px] font-bold text-emerald-600 hover:underline dark:text-emerald-400"
                   >
-                    Select Nearby Venue
+                    {useExistingRestaurant ? 'Type name' : 'Pick nearby'}
                   </button>
                 )}
               </div>
-            </div>
-
-            {useExistingRestaurant ? (
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Pick from Verified Venues in your area:
-                </label>
+              {useExistingRestaurant ? (
                 <select
                   value={selectedRestaurantId}
                   onChange={(e) => handleSelectRestaurant(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                  className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
                 >
-                  <option value="">-- Choose a local restaurant / bakery --</option>
+                  <option value="">-- Choose local venue --</option>
                   {nearbyRestaurants.map((r) => (
                     <option key={r.id} value={r.id}>
-                      {r.name} ({r.type} · {r.address.slice(0, 30)}...)
+                      {r.name.slice(0, 24)}
                     </option>
                   ))}
                 </select>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Restaurant / Caterer Name:
-                  </label>
-                  <input
-                    type="text"
-                    value={donorName}
-                    onChange={(e) => setDonorName(e.target.value)}
-                    placeholder="e.g. Mario's Pizzeria & Cafe"
-                    required
-                    className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                    Contact Phone (For NGO pickup):
-                  </label>
-                  <input
-                    type="tel"
-                    value={donorPhone}
-                    onChange={(e) => setDonorPhone(e.target.value)}
-                    placeholder="+91 98450 12345"
-                    className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
-                  />
-                </div>
-              </div>
-            )}
+              ) : (
+                <input
+                  type="text"
+                  value={donorName}
+                  onChange={(e) => setDonorName(e.target.value)}
+                  placeholder="e.g. Green Bowl Kitchen"
+                  required
+                  className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                />
+              )}
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+                Contact Phone:
+              </label>
+              <input
+                type="tel"
+                value={donorPhone}
+                onChange={(e) => setDonorPhone(e.target.value)}
+                placeholder="+91 98450 12345"
+                className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+              />
+            </div>
           </div>
 
           {/* STEP 2: Food Description */}
-          <div className="space-y-3">
+          <div>
+            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+              Food Description &amp; Dishes:
+            </label>
+            <input
+              type="text"
+              value={foodType}
+              onChange={(e) => setFoodType(e.target.value)}
+              placeholder="e.g. 35 Portions Veg Meals (Rice, Dal, Subzi)"
+              required
+              className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+            />
+          </div>
+
+          {/* STEP 3: Category Toggle with Bold Red Non-Veg Accent */}
+          <div className="grid grid-cols-2 gap-2">
+            <CategoryToggle
+              active={foodCategory === 'veg'}
+              name="modalCategory"
+              value="veg"
+              icon={<Leaf size={14} className="text-emerald-600 shrink-0" />}
+              label="Pure Veg"
+              onChange={() => setFoodCategory('veg')}
+            />
+            <CategoryToggle
+              active={foodCategory === 'non-veg'}
+              name="modalCategory"
+              value="non-veg"
+              icon={<Beef size={14} className="text-rose-600 shrink-0" />}
+              label="Non-Veg (Red)"
+              onChange={() => setFoodCategory('non-veg')}
+            />
+          </div>
+
+          {/* STEP 4: Quantity & Unit */}
+          <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                2. Food Description & Dietary Type:
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+                Quantity:
               </label>
               <input
-                type="text"
-                value={foodType}
-                onChange={(e) => setFoodType(e.target.value)}
-                placeholder="e.g. 45 Vegetarian Lunch Platters (Rice, Dal, Paneer Gravy)"
+                type="number"
+                min="1"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
                 required
-                className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+                className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
               />
             </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <CategoryToggle
-                active={foodCategory === 'veg'}
-                name="modalCategory"
-                value="veg"
-                label="Pure Vegetarian"
-                onChange={() => setFoodCategory('veg')}
-              />
-              <CategoryToggle
-                active={foodCategory === 'non-veg'}
-                name="modalCategory"
-                value="non-veg"
-                label="Contains Non-Veg"
-                onChange={() => setFoodCategory('non-veg')}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Quantity:
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  required
-                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  Unit:
-                </label>
-                <select
-                  value={quantityUnit}
-                  onChange={(e) => setQuantityUnit(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
-                >
-                  <option value="servings">Portions / Servings</option>
-                  <option value="kg">Kilograms (kg)</option>
-                  <option value="boxes">Food Boxes</option>
-                  <option value="loaves">Loaves / Breads</option>
-                </select>
-              </div>
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-0.5">
+                Unit:
+              </label>
+              <select
+                value={quantityUnit}
+                onChange={(e) => setQuantityUnit(e.target.value)}
+                className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+              >
+                <option value="servings">Portions / Servings</option>
+                <option value="kg">Kilograms (kg)</option>
+                <option value="boxes">Food Boxes</option>
+                <option value="loaves">Breads / Packs</option>
+              </select>
             </div>
           </div>
 
-          {/* STEP 3: Safe Expiry Window */}
-          <div className="space-y-2 rounded-2xl bg-slate-50 p-3.5 dark:bg-[#0E1420]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                3. Safe Expiry Window (Food must be collected before):
-              </span>
+          {/* STEP 5: Safe Expiry Window */}
+          <div>
+            <div className="flex items-center justify-between mb-0.5">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Safe Expiry (Must pickup before):
+              </label>
               <div className="flex gap-1">
                 <button
                   type="button"
                   onClick={() => handleQuickExpiry(2)}
-                  className="rounded bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300"
+                  className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 >
                   +2h
                 </button>
                 <button
                   type="button"
                   onClick={() => handleQuickExpiry(4)}
-                  className="rounded bg-slate-200 px-2 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-300"
+                  className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300"
                 >
                   +4h
                 </button>
@@ -262,22 +254,22 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
               required
-              className="w-full rounded-xl border border-slate-300 bg-white p-2 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#131926] dark:text-white"
+              className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
             />
           </div>
 
-          {/* STEP 4: Pickup Address */}
+          {/* STEP 6: Pickup Address with Instant GPS Auto-fill */}
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                4. Pickup Address & Coordinates:
+            <div className="flex items-center justify-between mb-0.5">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                Pickup Address:
               </label>
               <button
                 type="button"
                 onClick={handleApplyLiveLocation}
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400"
+                className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 hover:underline dark:text-emerald-400"
               >
-                <LocateFixed size={12} /> Auto-fill My Detected Location
+                <LocateFixed size={11} /> Auto-fill GPS
               </button>
             </div>
             <input
@@ -286,17 +278,31 @@ export function FoodModal({ userLocation, nearbyRestaurants = [], onClose, onSub
               onChange={(e) => setAddress(e.target.value)}
               placeholder="e.g. 100 Feet Road, Indiranagar, Bengaluru"
               required
-              className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs font-semibold text-slate-900 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
+              className="h-8 sm:h-9 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-semibold text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-700 dark:bg-[#0E1420] dark:text-white"
             />
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button with Loading Spinner and Double-Click Guard */}
           <button
             type="submit"
-            className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/30 transition hover:bg-emerald-700 active:scale-95"
+            disabled={submitting}
+            className={`mt-2 flex h-10 sm:h-11 w-full items-center justify-center gap-2 rounded-xl text-xs sm:text-sm font-black text-white shadow-md transition ${
+              submitting
+                ? 'bg-emerald-700/80 cursor-not-allowed opacity-80'
+                : 'bg-emerald-600 hover:bg-emerald-700 active:scale-98 shadow-emerald-600/30'
+            }`}
           >
-            <Check size={18} />
-            Publish Surplus Food (Live on Map)
+            {submitting ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                <span>Publishing Surplus Food...</span>
+              </>
+            ) : (
+              <>
+                <Check size={16} />
+                <span>Publish Surplus Food (Live on Map)</span>
+              </>
+            )}
           </button>
         </form>
       </div>

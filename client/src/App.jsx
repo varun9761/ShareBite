@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
 import { api, locationPresets } from './api/client'
 
@@ -223,8 +223,12 @@ export default function App() {
     refresh(userLocation, radiusKm)
   }
 
+  const isCreatingListingRef = useRef(false)
+
   // Create new food listing
   async function createFoodListing(payload) {
+    if (isCreatingListingRef.current) return
+    isCreatingListingRef.current = true
     try {
       const listing = await api('/api/listings', {
         method: 'POST',
@@ -244,6 +248,8 @@ export default function App() {
       await refresh(newLoc, radiusKm)
     } catch (err) {
       setToast(`Error: ${err.message}`)
+    } finally {
+      isCreatingListingRef.current = false
     }
   }
 

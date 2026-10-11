@@ -91,11 +91,11 @@ export function AppHeader({
         </div>
 
         {/* Row 2 on mobile: Search Place & GPS location bar */}
-        <div className="flex w-full sm:w-auto items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 p-1 dark:border-slate-800 dark:bg-[#131926]">
+        <div className="flex w-full sm:w-auto items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-100/80 p-1 dark:border-slate-800 dark:bg-[#131926]">
           <button
             onClick={onTrackGPS}
             disabled={locating}
-            className="flex shrink-0 items-center gap-1 rounded-lg bg-white px-2.5 py-1.5 text-xs font-bold text-slate-800 shadow-sm hover:text-emerald-600 dark:bg-[#0E1420] dark:text-slate-200 transition"
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-white px-2.5 py-1 text-xs font-bold text-slate-800 shadow-sm hover:text-emerald-600 dark:bg-[#0E1420] dark:text-slate-200 transition"
             title="Track precise GPS position"
           >
             {locating ? (
@@ -103,15 +103,16 @@ export function AppHeader({
             ) : (
               <LocateFixed size={13} className={userLocation.isLiveGPS ? 'text-emerald-600' : 'text-slate-400'} />
             )}
-            <span>{userLocation.isLiveGPS ? 'GPS Locked' : 'Locate Me'}</span>
+            <span className="inline sm:hidden">{userLocation.isLiveGPS ? 'GPS' : 'Locate'}</span>
+            <span className="hidden sm:inline">{userLocation.isLiveGPS ? 'GPS Locked' : 'Locate Me'}</span>
           </button>
 
           <button
             onClick={onOpenSearchPlace}
-            className="flex flex-1 items-center justify-between gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white px-2 min-w-0"
+            className="flex flex-1 items-center justify-between gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2 py-0.5 min-w-0"
             title="Search another city or locality"
           >
-            <span className="truncate text-left">{userLocation.address || 'Select City'}</span>
+            <span className="truncate text-left text-xs">{userLocation.address || 'Select City'}</span>
             <Search size={13} className="shrink-0 text-slate-400" />
           </button>
         </div>

@@ -65,12 +65,19 @@ export function DiscoveryTabChip({ active, onClick, icon, label, count, color = 
 }
 
 export function CategoryToggle({ active, name, value, icon, label, onChange }) {
+  const isNonVeg = value === 'non-veg'
+  const activeTone = isNonVeg
+    ? 'border-rose-500 bg-rose-50 text-rose-800 shadow-sm dark:border-rose-600 dark:bg-rose-950/80 dark:text-rose-200 ring-2 ring-rose-500/20'
+    : 'border-emerald-500 bg-emerald-50 text-emerald-900 shadow-sm dark:border-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-200 ring-2 ring-emerald-500/20'
+
+  const inactiveTone = isNonVeg
+    ? 'border-rose-200/90 bg-rose-50/40 text-rose-700 hover:bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/20 dark:text-rose-300'
+    : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300'
+
   return (
     <label
-      className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition ${
-        active
-          ? 'border-emerald-500 bg-emerald-50 text-emerald-900 dark:border-emerald-600 dark:bg-emerald-950 dark:text-emerald-300'
-          : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-[#0E1420] dark:text-slate-300'
+      className={`flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border p-2.5 text-xs font-bold transition-all ${
+        active ? activeTone : inactiveTone
       }`}
     >
       <input type="radio" name={name} value={value} checked={active} onChange={onChange} className="sr-only" />

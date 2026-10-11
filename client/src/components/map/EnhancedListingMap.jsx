@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MapContainer, Marker, Popup, TileLayer, Polyline } from 'react-leaflet'
+import { MapContainer, Marker, Popup, TileLayer, Polyline, ZoomControl } from 'react-leaflet'
 import { MapController } from './MapController'
 import {
   foodMarkerIcon,
@@ -101,8 +101,10 @@ export function EnhancedListingMap({
         center={center}
         zoom={13}
         scrollWheelZoom={false}
+        zoomControl={false}
         className="h-[420px] sm:h-[560px] w-full"
       >
+        <ZoomControl position="bottomright" />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

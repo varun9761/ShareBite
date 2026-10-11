@@ -201,7 +201,7 @@ export function ClaimerDashboard({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="shrink-0 h-6.5 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-800 outline-none dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-200"
+            className="shrink-0 h-7 rounded-xl border border-slate-200 bg-slate-50 px-2 text-[10px] font-bold text-slate-800 outline-none dark:border-slate-700 dark:bg-[#0E1420] dark:text-slate-200"
           >
             <option value="expiry">⏰ Expiry</option>
             <option value="distance">📍 Distance</option>

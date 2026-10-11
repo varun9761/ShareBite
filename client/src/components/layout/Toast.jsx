@@ -8,7 +8,7 @@ export function Toast({ message, onClose }) {
   }, [message, onClose])
 
   return (
-    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2.5 rounded-2xl bg-slate-900/95 px-4 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-md border border-slate-700 animate-bounce">
+    <div className="fixed bottom-20 sm:bottom-8 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2.5 rounded-2xl bg-slate-900/95 px-4 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-md border border-slate-700 max-w-[90vw] sm:max-w-md">
       <Sparkles size={16} className="text-amber-400 shrink-0" />
       <span>{message}</span>
       <button
