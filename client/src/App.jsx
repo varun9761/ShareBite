@@ -223,11 +223,34 @@ export default function App() {
     refresh(userLocation, radiusKm)
   }
 
+  // Guard to ensure only verified donors can open post modal
+  function handleOpenPostFood() {
+    if (!currentUser) {
+      setAuthModalOpen(true)
+      setToast('Please login or register to donate surplus food.')
+      return
+    }
+    if (!currentUser.verified && currentUser.role !== 'admin') {
+      setToast('⏳ Account Pending: An admin must verify your account before you can post food.')
+      return
+    }
+    setModalOpen(true)
+  }
+
   const isCreatingListingRef = useRef(false)
 
   // Create new food listing
   async function createFoodListing(payload) {
     if (isCreatingListingRef.current) return
+    if (!currentUser) {
+      setAuthModalOpen(true)
+      setToast('Please login to donate surplus food.')
+      return
+    }
+    if (!currentUser.verified && currentUser.role !== 'admin') {
+      setToast('⏳ Account Pending: An admin must verify your account before posting.')
+      return
+    }
     isCreatingListingRef.current = true
     try {
       const listing = await api('/api/listings', {
@@ -255,6 +278,15 @@ export default function App() {
 
   // Claim food listing & show OTP
   async function claimFood(id) {
+    if (!currentUser) {
+      setAuthModalOpen(true)
+      setToast('Please login or register as an NGO/volunteer to claim batches.')
+      return
+    }
+    if (!currentUser.verified && currentUser.role !== 'admin') {
+      setToast('⏳ Verification Pending: An admin must verify your NGO before you can claim batches.')
+      return
+    }
     try {
       const listing = await api(`/api/listings/${id}/claim`, { method: 'POST' })
       setClaimModalListing(listing)
@@ -280,15 +312,75 @@ export default function App() {
     }
   }
 
-  // Verify Partner (Admin)
+  // Admin Operations Suite
   async function verifyPartner(id) {
     try {
       await api(`/api/admin/users/${id}/verify`, { method: 'POST' })
-      setToast('Partner credentials successfully verified')
+      setToast('Partner credentials successfully verified!')
       await refresh()
     } catch (err) {
       setToast(`Error: ${err.message}`)
     }
+  }
+
+  async function toggleVerifyPartner(id) {
+    try {
+      await api(`/api/admin/users/${id}/toggle-verify`, { method: 'POST' })
+      setToast('Partner verification status toggled!')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function deleteUserAdmin(id) {
+    try {
+      await api(`/api/admin/users/${id}`, { method: 'DELETE' })
+      setToast('User account removed from platform.')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function deleteListingAdmin(id) {
+    try {
+      await api(`/api/admin/listings/${id}`, { method: 'DELETE' })
+      setToast('Surplus food batch removed.')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function updateListingStatusAdmin(id, status) {
+    try {
+      await api(`/api/admin/listings/${id}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status }),
+      })
+      setToast(`Batch status updated to ${status.toUpperCase()}!`)
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function extendListingAdmin(id) {
+    try {
+      await api(`/api/admin/listings/${id}/extend`, {
+        method: 'POST',
+        body: JSON.stringify({ hours: 2 }),
+      })
+      setToast('Safe expiry extended by +2 hours!')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  function broadcastAlert(msg) {
+    setToast(`📢 BROADCAST: ${msg}`)
   }
 
   function handleAuthSuccess(user) {
@@ -334,7 +426,7 @@ export default function App() {
           <HeroBanner
             metrics={metrics}
             urgentCount={urgentListingsCount}
-            onOpenPostFood={() => setModalOpen(true)}
+            onOpenPostFood={handleOpenPostFood}
             onExploreNGOs={() => {
               setView('claimer')
               setDiscoveryTab('ngo')
@@ -389,7 +481,8 @@ export default function App() {
                 listings={donorListings}
                 metrics={metrics}
                 userLocation={userLocation}
-                onOpenModal={() => setModalOpen(true)}
+                currentUser={currentUser}
+                onOpenModal={handleOpenPostFood}
                 onVerifyOTP={(listing) => setOtpVerifyTarget(listing)}
                 onOpenCertificate={(org) => setCertificateTarget(org || { name: 'Green Bowl Kitchen', role: 'donor' })}
               />
@@ -399,10 +492,17 @@ export default function App() {
               <AdminDashboard
                 metrics={metrics}
                 users={users}
-                listings={donorListings}
+                listings={listings}
                 ngos={ngos}
                 onVerify={verifyPartner}
+                onToggleVerify={toggleVerifyPartner}
+                onDeleteUser={deleteUserAdmin}
+                onDeleteListing={deleteListingAdmin}
+                onUpdateListingStatus={updateListingStatusAdmin}
+                onExtendListing={extendListingAdmin}
+                onBroadcastAlert={broadcastAlert}
                 onOpenCertificate={(org) => setCertificateTarget(org || { name: 'ShareBite Community Alliance', role: 'admin' })}
+                onRefresh={() => refresh(userLocation, radiusKm)}
               />
             )}
           </div>
@@ -412,7 +512,7 @@ export default function App() {
       {/* Floating Action Button (Desktop Only) */}
       <button
         className="hidden lg:flex fixed bottom-6 right-6 z-30 h-14 w-14 items-center justify-center rounded-full bg-emerald-600 text-white shadow-2xl shadow-emerald-600/40 transition hover:scale-110 active:scale-95"
-        onClick={() => setModalOpen(true)}
+        onClick={handleOpenPostFood}
         title="Post Surplus Food Batch"
       >
         <Plus size={28} />
@@ -426,7 +526,7 @@ export default function App() {
         setMapMode={setMapMode}
         discoveryTab={discoveryTab}
         setDiscoveryTab={setDiscoveryTab}
-        onOpenPostFood={() => setModalOpen(true)}
+        onOpenPostFood={handleOpenPostFood}
         onOpenPortalSheet={() => setMobilePortalOpen(true)}
         activeListingsCount={listings.length}
       />

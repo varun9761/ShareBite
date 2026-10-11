@@ -16,6 +16,7 @@ export function DonorDashboard({
   listings = [],
   metrics,
   userLocation,
+  currentUser,
   onOpenModal,
   onVerifyOTP,
   onOpenCertificate,
@@ -23,11 +24,25 @@ export function DonorDashboard({
   const [filterStatus, setFilterStatus] = useState('all') // 'all' | 'pending' | 'claimed' | 'picked_up'
   const [showMobileChart, setShowMobileChart] = useState(false)
 
-  const pendingCount = listings.filter((l) => l.status === 'pending').length
-  const claimedCount = listings.filter((l) => l.status === 'claimed').length
-  const completedCount = listings.filter((l) => l.status === 'picked_up').length
+  const nowMs = Date.now()
+  const TWELVE_HOURS_MS = 12 * 60 * 60 * 1000
 
-  const filteredListings = listings.filter((l) => {
+  // Automatically remove listings that are past 12 hours of their expiry time
+  const activeAndRecentListings = listings.filter((l) => {
+    if (l.status === 'expired' || (l.expiresAt && new Date(l.expiresAt).getTime() < nowMs)) {
+      const expTime = new Date(l.expiresAt).getTime()
+      if (nowMs - expTime > TWELVE_HOURS_MS) {
+        return false
+      }
+    }
+    return true
+  })
+
+  const pendingCount = activeAndRecentListings.filter((l) => l.status === 'pending').length
+  const claimedCount = activeAndRecentListings.filter((l) => l.status === 'claimed').length
+  const completedCount = activeAndRecentListings.filter((l) => l.status === 'picked_up').length
+
+  const filteredListings = activeAndRecentListings.filter((l) => {
     if (filterStatus === 'all') return true
     return l.status === filterStatus
   })
@@ -78,6 +93,25 @@ export function DonorDashboard({
           </div>
         </div>
       </section>
+
+      {/* Admin Verification Notice (When account is unverified) */}
+      {currentUser && !currentUser.verified && currentUser.role !== 'admin' && (
+        <section className="rounded-2xl border border-amber-300/80 bg-amber-50/90 p-3.5 sm:p-4 text-xs dark:border-amber-900/60 dark:bg-amber-950/40">
+          <div className="flex items-start gap-3">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white font-black text-xs">
+              ⏳
+            </span>
+            <div>
+              <h3 className="font-black text-amber-900 dark:text-amber-200">
+                Account Pending Admin Verification
+              </h3>
+              <p className="mt-0.5 text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+                Welcome, <strong>{currentUser.name}</strong>. Your donor account is currently under review by ShareBite administrators. Once approved, you can post surplus food batches live on the map.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Mobile Streamlined Operations & Filters Bar (Matches Claimer/NGO Mobile Alignment Theory) */}
       <section className="lg:hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-[#131926] space-y-2.5">

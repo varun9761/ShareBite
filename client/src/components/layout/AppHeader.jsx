@@ -34,8 +34,11 @@ export function AppHeader({
         <div className="flex items-center justify-between w-full sm:w-auto">
           <button
             className="group flex items-center gap-2.5 text-left transition"
-            onClick={() => setView('claimer')}
-            title="Go to Home / Discovery Feed"
+            onClick={() => {
+              setView('claimer')
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            }}
+            title="Go to Home & Return to top"
           >
             <span className="relative flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-white p-1 ring-1 ring-slate-200/90 shadow-sm transition group-hover:scale-105 dark:bg-slate-800 dark:ring-slate-700">
               <img src="/favicon.png" alt="ShareBite Logo" className="h-full w-full object-contain drop-shadow-sm" />

@@ -639,6 +639,78 @@ const db = {
     return user ? formatUser(user) : null;
   },
 
+  async toggleUserVerification(id) {
+    if (usePostgres) {
+      const res = await pool.query('UPDATE users SET verified = NOT verified WHERE id = $1 RETURNING *;', [id]);
+      return res.rows[0] ? formatUser(res.rows[0]) : null;
+    }
+    const user = fallbackStore.users.find((u) => u.id === id);
+    if (user) user.verified = !user.verified;
+    return user ? formatUser(user) : null;
+  },
+
+  async deleteUser(id) {
+    if (usePostgres) {
+      await pool.query('DELETE FROM users WHERE id = $1;', [id]);
+      return true;
+    }
+    const idx = fallbackStore.users.findIndex((u) => u.id === id);
+    if (idx !== -1) {
+      fallbackStore.users.splice(idx, 1);
+      return true;
+    }
+    return false;
+  },
+
+  async deleteListing(id) {
+    if (usePostgres) {
+      await pool.query('DELETE FROM listings WHERE id = $1;', [id]);
+      return true;
+    }
+    const idx = fallbackStore.listings.findIndex((l) => l.id === id);
+    if (idx !== -1) {
+      fallbackStore.listings.splice(idx, 1);
+      return true;
+    }
+    return false;
+  },
+
+  async updateListingStatus(id, newStatus) {
+    if (usePostgres) {
+      const res = await pool.query(
+        "UPDATE listings SET status = $1, picked_up_at = CASE WHEN $1 = 'picked_up' THEN NOW() ELSE picked_up_at END WHERE id = $2 RETURNING *;",
+        [newStatus, id]
+      );
+      return res.rows[0] ? formatListing(res.rows[0]) : null;
+    }
+    const listing = fallbackStore.listings.find((l) => l.id === id);
+    if (listing) {
+      listing.status = newStatus;
+      if (newStatus === 'picked_up') listing.picked_up_at = new Date().toISOString();
+      return formatListing(listing);
+    }
+    return null;
+  },
+
+  async extendListingExpiry(id, hours = 2) {
+    const hoursNum = Number(hours) || 2;
+    if (usePostgres) {
+      const res = await pool.query(
+        `UPDATE listings SET expires_at = expires_at + INTERVAL '${hoursNum} hours', status = 'pending' WHERE id = $1 RETURNING *;`,
+        [id]
+      );
+      return res.rows[0] ? formatListing(res.rows[0]) : null;
+    }
+    const listing = fallbackStore.listings.find((l) => l.id === id);
+    if (listing) {
+      const current = new Date(listing.expires_at || Date.now()).getTime();
+      listing.expires_at = new Date(current + hoursNum * 3600000).toISOString();
+      if (listing.status === 'expired') listing.status = 'pending';
+      return formatListing(listing);
+    }
+    return null;
+  },
+
   // LISTINGS
   async listActiveListings({ lat, lng, radiusKm = 15, category, search, sortBy = 'expiry' } = {}) {
     await this.expireUnsafeListings();
@@ -695,18 +767,19 @@ const db = {
 
   async listDonorListings(donorId) {
     await this.expireUnsafeListings();
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
     if (usePostgres) {
       const res = await pool.query(
         donorId
-          ? 'SELECT * FROM listings WHERE donor_id = $1 ORDER BY created_at DESC;'
-          : 'SELECT * FROM listings ORDER BY created_at DESC;',
+          ? 'SELECT * FROM listings WHERE donor_id = $1 AND (status != \'expired\' OR expires_at > NOW() - INTERVAL \'12 hours\') ORDER BY created_at DESC;'
+          : 'SELECT * FROM listings WHERE (status != \'expired\' OR expires_at > NOW() - INTERVAL \'12 hours\') ORDER BY created_at DESC;',
         donorId ? [donorId] : []
       );
       return res.rows.map((row) => formatListing(row));
     }
 
     return fallbackStore.listings
-      .filter((l) => !donorId || l.donor_id === donorId)
+      .filter((l) => (!donorId || l.donor_id === donorId) && (l.status !== 'expired' || l.expires_at > twelveHoursAgo))
       .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .map((row) => formatListing(row));
   },

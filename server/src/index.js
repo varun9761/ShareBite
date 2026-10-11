@@ -195,6 +195,12 @@ app.get('/api/listings', async (req, res, next) => {
 
 app.post('/api/listings', async (req, res, next) => {
   try {
+    if (req.user && !req.user.verified && req.user.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Account pending admin verification. An administrator must verify your account before you can post surplus food.',
+      });
+    }
+
     const { foodType, quantity, preparedAt, expiresAt, address } = req.body;
     if (!foodType || !quantity || !preparedAt || !expiresAt) {
       return res.status(400).json({
@@ -237,6 +243,12 @@ app.get('/api/donor/listings', async (req, res, next) => {
 
 app.post('/api/listings/:id/claim', async (req, res, next) => {
   try {
+    if (req.user && !req.user.verified && req.user.role !== 'admin') {
+      return res.status(403).json({
+        message: 'Account pending admin verification. An administrator must verify your NGO account before you can claim surplus food.',
+      });
+    }
+
     const claimer = req.user || { name: req.body.claimerName || 'Hope Meals Network', id: 'user-ngo-1' };
     const listing = await db.claimListing(req.params.id, claimer);
     if (!listing) {
@@ -442,6 +454,59 @@ app.post('/api/admin/users/:id/verify', async (req, res, next) => {
     const user = await db.verifyUser(req.params.id);
     if (!user) return res.status(404).json({ message: 'User not found.' });
     res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/users/:id/toggle-verify', async (req, res, next) => {
+  try {
+    const user = await db.toggleUserVerification(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found.' });
+    res.json(user);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/admin/users/:id', async (req, res, next) => {
+  try {
+    const success = await db.deleteUser(req.params.id);
+    if (!success) return res.status(404).json({ message: 'User not found.' });
+    res.json({ success: true, message: 'User removed from network.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/admin/listings/:id', async (req, res, next) => {
+  try {
+    const success = await db.deleteListing(req.params.id);
+    if (!success) return res.status(404).json({ message: 'Listing not found.' });
+    res.json({ success: true, message: 'Surplus batch deleted by admin.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.patch('/api/admin/listings/:id/status', async (req, res, next) => {
+  try {
+    const { status } = req.body;
+    if (!status) return res.status(400).json({ message: 'Status is required.' });
+    const listing = await db.updateListingStatus(req.params.id, status);
+    if (!listing) return res.status(404).json({ message: 'Listing not found.' });
+    res.json(listing);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/listings/:id/extend', async (req, res, next) => {
+  try {
+    const { hours } = req.body || {};
+    const listing = await db.extendListingExpiry(req.params.id, hours || 2);
+    if (!listing) return res.status(404).json({ message: 'Listing not found.' });
+    res.json(listing);
   } catch (error) {
     next(error);
   }
