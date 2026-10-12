@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { X, Search, Loader2, MapPin } from 'lucide-react'
-import { api } from '../../api/client'
+import { X, Search, Loader2, MapPin, Sparkles } from 'lucide-react'
+import { api, locationPresets } from '../../api/client'
 
 export function LocationSearchModal({ onClose, onSelect }) {
   const [query, setQuery] = useState('')
@@ -53,7 +53,7 @@ export function LocationSearchModal({ onClose, onSelect }) {
           </button>
         </form>
 
-        <div className="mt-4 max-h-60 overflow-y-auto space-y-1.5">
+        <div className="mt-4 max-h-72 overflow-y-auto space-y-1.5">
           {results.length > 0 ? (
             results.map((item, idx) => (
               <button
@@ -67,7 +67,32 @@ export function LocationSearchModal({ onClose, onSelect }) {
             ))
           ) : query && !searching ? (
             <p className="py-4 text-center text-xs text-slate-500">No matching locations found.</p>
-          ) : null}
+          ) : (
+            <div className="py-2">
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">
+                <Sparkles size={12} className="text-emerald-500" />
+                Popular Hubs & Cities
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {locationPresets.map((preset, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => onSelect({
+                      lat: preset.lat,
+                      lng: preset.lng,
+                      address: preset.address,
+                      displayName: preset.label,
+                      city: preset.label.split('-')[0].trim(),
+                    })}
+                    className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50/70 p-2 text-left text-xs font-semibold text-slate-700 hover:border-emerald-300 hover:bg-emerald-50/60 hover:text-emerald-800 transition dark:border-slate-800/80 dark:bg-[#0E1420] dark:text-slate-300 dark:hover:bg-[#1A2234] dark:hover:text-emerald-400"
+                  >
+                    <MapPin size={13} className="shrink-0 text-emerald-600" />
+                    <span className="truncate">{preset.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

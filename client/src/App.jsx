@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Plus } from 'lucide-react'
-import { api, locationPresets } from './api/client'
+import { api, locationPresets, isRawCoordinateString, findClosestPreset } from './api/client'
 
 // Layout Components
 import { AppHeader } from './components/layout/AppHeader'
@@ -120,7 +120,7 @@ export default function App() {
     }
   }
 
-  // Exact GPS Geolocation Tracking with fallback to IP Geolocation
+  // Exact GPS Geolocation Tracking with fallback to IP Geolocation & Multi-tier Reverse Geocoding
   async function trackExactLocation() {
     setLocating(true)
     setToast('Locating your live position...')
@@ -139,6 +139,8 @@ export default function App() {
 
     try {
       let latitude, longitude, accuracy, isGPS = true
+      let detectedCity = ''
+      let detectedAddress = ''
 
       try {
         const position = await getBrowserPosition()
@@ -147,18 +149,98 @@ export default function App() {
         accuracy = Math.round(position.coords.accuracy)
       } catch (geoErr) {
         console.warn('Browser GPS unavailable, using IP location fallback...', geoErr.message)
-        const ipLoc = await api('/api/geocode/ip').catch(() => null)
-        if (!ipLoc || !Number.isFinite(ipLoc.lat) || !Number.isFinite(ipLoc.lng)) {
-          throw new Error('Location detection failed via GPS & IP')
+
+        // Attempt 1: Direct client-side browser IP lookup (sees user's true external IP, not server datacenter)
+        try {
+          const clientIpRes = await fetch('https://ipwho.is/', { signal: AbortSignal.timeout(3000) })
+          if (clientIpRes.ok) {
+            const data = await clientIpRes.json()
+            if (data.success && Number.isFinite(data.latitude) && Number.isFinite(data.longitude)) {
+              latitude = data.latitude
+              longitude = data.longitude
+              accuracy = 2500
+              isGPS = false
+              detectedCity = data.city || data.region || ''
+              detectedAddress = [data.city, data.region, data.country].filter(Boolean).join(', ')
+            }
+          }
+        } catch {
+          // Continue to server IP endpoint
         }
-        latitude = ipLoc.lat
-        longitude = ipLoc.lng
-        accuracy = 1500
-        isGPS = false
+
+        // Attempt 2: Server-side IP location
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          const ipLoc = await api('/api/geocode/ip').catch(() => null)
+          if (ipLoc && Number.isFinite(ipLoc.lat) && Number.isFinite(ipLoc.lng)) {
+            latitude = ipLoc.lat
+            longitude = ipLoc.lng
+            accuracy = 2500
+            isGPS = false
+            detectedCity = ipLoc.city || ''
+            detectedAddress = ipLoc.address || ''
+          }
+        }
+
+        // Attempt 3: Safe preset fallback
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+          const defaultPreset = locationPresets[0]
+          latitude = defaultPreset.lat
+          longitude = defaultPreset.lng
+          detectedAddress = defaultPreset.address
+          detectedCity = defaultPreset.label.split('-')[0].trim()
+          accuracy = null
+          isGPS = false
+        }
       }
 
-      const geoRes = await api(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`).catch(() => null)
-      const address = geoRes?.address || geoRes?.displayName || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+      // Step 2: Reverse geocode to get a guaranteed human-friendly location name (never raw coordinates)
+      let address = detectedAddress && !isRawCoordinateString(detectedAddress) ? detectedAddress : ''
+      let cityName = detectedCity
+
+      // 2A: Backend Reverse Geocoder (with Nominatim & BigDataCloud & Reference Hubs)
+      if (!address || isRawCoordinateString(address)) {
+        try {
+          const geoRes = await api(`/api/geocode/reverse?lat=${latitude}&lng=${longitude}`)
+          if (geoRes?.address && !isRawCoordinateString(geoRes.address)) {
+            address = geoRes.address
+            cityName = geoRes.city || cityName
+          }
+        } catch {
+          // Continue
+        }
+      }
+
+      // 2B: Direct client-side BigDataCloud reverse geocode
+      if (!address || isRawCoordinateString(address)) {
+        try {
+          const bdcRes = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`,
+            { signal: AbortSignal.timeout(3500) }
+          )
+          if (bdcRes.ok) {
+            const bdcData = await bdcRes.json()
+            const parts = [
+              bdcData.locality,
+              bdcData.city && bdcData.city !== bdcData.locality ? bdcData.city : '',
+              bdcData.principalSubdivision,
+              bdcData.countryName,
+            ].filter(Boolean)
+            if (parts.length > 0) {
+              address = parts.join(', ')
+              cityName = bdcData.city || bdcData.locality || cityName
+            }
+          }
+        } catch {
+          // Continue
+        }
+      }
+
+      // 2C: Guaranteed closest hub preset
+      if (!address || isRawCoordinateString(address)) {
+        const closestPreset = findClosestPreset(latitude, longitude)
+        address = closestPreset.address || closestPreset.label
+        cityName = cityName || closestPreset.label.split('-')[0].trim()
+      }
 
       const newLoc = {
         lat: latitude,
@@ -169,7 +251,7 @@ export default function App() {
       }
 
       setUserLocation(newLoc)
-      setToast(`📍 Location locked: ${geoRes?.city || geoRes?.street || (isGPS ? 'GPS Position' : 'Detected Area')}`)
+      setToast(`📍 Location locked: ${cityName || address.split(',')[0] || (isGPS ? 'GPS Position' : 'Detected Area')}`)
       await refresh(newLoc, radiusKm)
     } catch (err) {
       console.warn('Location detection error:', err)
@@ -196,16 +278,21 @@ export default function App() {
   }
 
   function handleSelectCustomLocation(place) {
+    let cleanAddress = place.address || place.displayName || ''
+    if (isRawCoordinateString(cleanAddress)) {
+      const closest = findClosestPreset(place.lat, place.lng)
+      cleanAddress = closest.address
+    }
     const newLoc = {
       lat: place.lat,
       lng: place.lng,
-      address: place.address || place.displayName,
+      address: cleanAddress,
       isLiveGPS: true,
       accuracy: 250,
     }
     setUserLocation(newLoc)
     setSearchPlaceModalOpen(false)
-    setToast(`📍 Location switched to ${place.city || place.displayName.slice(0, 30)}`)
+    setToast(`📍 Location switched to ${place.city || cleanAddress.split(',')[0] || 'Selected Area'}`)
     refresh(newLoc, radiusKm)
   }
 

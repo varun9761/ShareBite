@@ -13,6 +13,7 @@ import {
   User,
   ShieldCheck,
 } from 'lucide-react'
+import { formatLocationDisplay } from '../../api/client'
 
 export function AppHeader({
   setView,
@@ -115,7 +116,7 @@ export function AppHeader({
             className="flex flex-1 items-center justify-between gap-1.5 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white px-2 py-0.5 min-w-0"
             title="Search another city or locality"
           >
-            <span className="truncate text-left text-xs">{userLocation.address || 'Select City'}</span>
+            <span className="truncate text-left text-xs">{formatLocationDisplay(userLocation.address)}</span>
             <Search size={13} className="shrink-0 text-slate-400" />
           </button>
         </div>

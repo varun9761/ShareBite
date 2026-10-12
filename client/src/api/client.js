@@ -6,6 +6,7 @@ export const locationPresets = [
   { label: 'Bengaluru - Koramangala', address: 'Koramangala 5th Block, Bengaluru', lat: 12.9352, lng: 77.6245 },
   { label: 'Bengaluru - Domlur / Indiranagar', address: 'Domlur & Indiranagar, Bengaluru', lat: 12.9611, lng: 77.6387 },
   { label: 'New Delhi - Connaught Place', address: 'Connaught Place, New Delhi', lat: 28.6315, lng: 77.2167 },
+  { label: 'Noida - Sector 62 / NCR', address: 'Sector 62, Noida, Uttar Pradesh', lat: 28.6280, lng: 77.3649 },
   { label: 'Mumbai - Bandra West', address: 'Bandra West, Mumbai', lat: 19.0607, lng: 72.8362 },
   { label: 'Hyderabad - Hitec City', address: 'Hitec City, Hyderabad', lat: 17.4435, lng: 78.3772 },
   { label: 'Chennai - T Nagar', address: 'T Nagar, Chennai', lat: 13.0418, lng: 80.2341 },
@@ -119,3 +120,35 @@ export function toDatetimeLocal(date) {
   const mm = pad(date.getMinutes())
   return `${y}-${m}-${d}T${hh}:${mm}`
 }
+
+export function isRawCoordinateString(str) {
+  if (!str || typeof str !== 'string') return true;
+  const trimmed = str.trim();
+  if (/^lat:?/i.test(trimmed)) return true;
+  if (/^lng:?/i.test(trimmed)) return true;
+  if (/^coordinates/i.test(trimmed)) return true;
+  if (/^-?\d+(\.\d+)?[,\s]+-?\d+(\.\d+)?$/.test(trimmed)) return true;
+  return false;
+}
+
+export function findClosestPreset(lat, lng) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return locationPresets[0];
+  let closest = locationPresets[0];
+  let minD = Infinity;
+  for (const preset of locationPresets) {
+    const d = calculateDistanceKm(lat, lng, preset.lat, preset.lng);
+    if (d < minD) {
+      minD = d;
+      closest = preset;
+    }
+  }
+  return closest;
+}
+
+export function formatLocationDisplay(address) {
+  if (!address || isRawCoordinateString(address)) {
+    return 'Select City';
+  }
+  return address;
+}
+

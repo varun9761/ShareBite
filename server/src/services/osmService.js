@@ -208,20 +208,114 @@ async function fetchNearbyNGOsFromOSM(lat, lng, radiusKm = 15) {
   }
 }
 
+function isRawCoordinate(str) {
+  if (!str || typeof str !== 'string') return true;
+  const trimmed = str.trim();
+  if (/^lat:?/i.test(trimmed)) return true;
+  if (/^lng:?/i.test(trimmed)) return true;
+  if (/^coordinates/i.test(trimmed)) return true;
+  if (/^-?\d+(\.\d+)?[,\s]+-?\d+(\.\d+)?$/.test(trimmed)) return true;
+  return false;
+}
+
+const REFERENCE_CITIES = [
+  { city: 'New Delhi', state: 'Delhi', area: 'Connaught Place', lat: 28.6315, lng: 77.2167 },
+  { city: 'Noida', state: 'Uttar Pradesh', area: 'Sector 62', lat: 28.6280, lng: 77.3649 },
+  { city: 'Greater Noida', state: 'Uttar Pradesh', area: 'Knowledge Park', lat: 28.4744, lng: 77.5040 },
+  { city: 'Dadri', state: 'Uttar Pradesh', area: 'Main Road', lat: 28.5525, lng: 77.5540 },
+  { city: 'Gurugram', state: 'Haryana', area: 'Cyber City', lat: 28.4950, lng: 77.0895 },
+  { city: 'Bengaluru', state: 'Karnataka', area: 'Koramangala', lat: 12.9352, lng: 77.6245 },
+  { city: 'Bengaluru', state: 'Karnataka', area: 'Indiranagar', lat: 12.9716, lng: 77.6412 },
+  { city: 'Mumbai', state: 'Maharashtra', area: 'Bandra West', lat: 19.0607, lng: 72.8362 },
+  { city: 'Hyderabad', state: 'Telangana', area: 'Hitec City', lat: 17.4435, lng: 78.3772 },
+  { city: 'Chennai', state: 'Tamil Nadu', area: 'T Nagar', lat: 13.0418, lng: 80.2341 },
+  { city: 'Kolkata', state: 'West Bengal', area: 'Park Street', lat: 22.5535, lng: 88.3512 },
+  { city: 'Pune', state: 'Maharashtra', area: 'Koregaon Park', lat: 18.5362, lng: 73.8939 },
+  { city: 'Ahmedabad', state: 'Gujarat', area: 'Navrangpura', lat: 23.0365, lng: 72.5611 },
+  { city: 'Jaipur', state: 'Rajasthan', area: 'C Scheme', lat: 26.9124, lng: 75.7873 },
+  { city: 'Lucknow', state: 'Uttar Pradesh', area: 'Hazratganj', lat: 26.8467, lng: 80.9462 },
+  { city: 'Chandigarh', state: 'Punjab', area: 'Sector 17', lat: 30.7333, lng: 76.7794 },
+];
+
+function getNearestReferenceCity(lat, lng) {
+  let closest = REFERENCE_CITIES[0];
+  let minDistance = Infinity;
+
+  for (const ref of REFERENCE_CITIES) {
+    const d = distanceKm(lat, lng, ref.lat, ref.lng);
+    if (d < minDistance) {
+      minDistance = d;
+      closest = ref;
+    }
+  }
+
+  let formatted = '';
+  if (minDistance < 25) {
+    formatted = `${closest.area}, ${closest.city}`;
+  } else if (minDistance < 80) {
+    formatted = `${closest.city} Vicinity, ${closest.state}`;
+  } else {
+    formatted = `${closest.city} Region, India`;
+  }
+
+  return {
+    address: formatted,
+    city: closest.city,
+    street: closest.area,
+    state: closest.state,
+    country: 'India',
+    displayName: formatted,
+    distanceKm: minDistance,
+  };
+}
+
+async function fetchBigDataCloudReverse(lat, lng) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`;
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (!res.ok) return null;
+    const data = await res.json();
+    const city = data.city || data.locality || data.principalSubdivision || '';
+    const locality = data.locality || data.principalSubdivision || '';
+    const state = data.principalSubdivision || '';
+    const country = data.countryName || '';
+
+    const parts = [locality, city && city !== locality ? city : '', state, country].filter(Boolean);
+    const formatted = parts.length > 0 ? parts.join(', ') : '';
+    if (!formatted || isRawCoordinate(formatted)) return null;
+
+    return {
+      address: formatted,
+      street: locality || 'Community Area',
+      city: city || 'Local Area',
+      state,
+      country,
+      displayName: formatted,
+    };
+  } catch {
+    return null;
+  }
+}
+
 /**
- * Reverse geocode latitude and longitude to a human-friendly address using Nominatim (OpenStreetMap).
+ * Reverse geocode latitude and longitude to a human-friendly address using Nominatim (OpenStreetMap)
+ * with multi-tier fallback (BigDataCloud and Nearest City Hub). Never returns raw coordinates.
  * @param {number} lat
  * @param {number} lng
  */
 async function reverseGeocode(lat, lng) {
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return { address: 'Current Location', city: 'Detected Area', country: 'India' };
+    return { address: 'Connaught Place, New Delhi', city: 'New Delhi', country: 'India' };
   }
 
   const cacheKey = `geo-${lat.toFixed(4)}-${lng.toFixed(4)}`;
   const cached = getCached(cacheKey);
-  if (cached) return cached;
+  if (cached && !isRawCoordinate(cached.address)) return cached;
 
+  // Try 1: OpenStreetMap Nominatim
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -237,35 +331,45 @@ async function reverseGeocode(lat, lng) {
 
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      return { address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`, city: 'Your Location' };
+    if (response.ok) {
+      const data = await response.json();
+      const addr = data.address || {};
+
+      const street = addr.road || addr.suburb || addr.neighbourhood || addr.residential || '';
+      const city = addr.city || addr.town || addr.village || addr.county || addr.state_district || '';
+      const state = addr.state || '';
+      const postcode = addr.postcode || '';
+
+      const formatted = [street, addr.suburb, city, state, postcode].filter(Boolean).join(', ') || data.display_name;
+
+      if (formatted && !isRawCoordinate(formatted)) {
+        const result = {
+          address: formatted,
+          street: street || 'Nearby Road',
+          city: city || 'Your City',
+          state,
+          postcode,
+          displayName: data.display_name || formatted,
+        };
+        setCache(cacheKey, result);
+        return result;
+      }
     }
-
-    const data = await response.json();
-    const addr = data.address || {};
-
-    const street = addr.road || addr.suburb || addr.neighbourhood || addr.residential || '';
-    const city = addr.city || addr.town || addr.village || addr.county || addr.state_district || 'Local Area';
-    const state = addr.state || '';
-    const postcode = addr.postcode || '';
-
-    const formatted = [street, addr.suburb, city, state, postcode].filter(Boolean).join(', ') || data.display_name;
-
-    const result = {
-      address: formatted || `Location at ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-      street: street || 'Nearby Road',
-      city: city || 'Your City',
-      state,
-      postcode,
-      displayName: data.display_name,
-    };
-
-    setCache(cacheKey, result);
-    return result;
   } catch (err) {
-    console.warn(`[Nominatim Geocode] Reverse lookup failed: ${err.message}`);
-    return { address: `Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`, city: 'Your Area' };
+    console.warn(`[Nominatim Geocode] Reverse lookup failed or timed out: ${err.message}`);
   }
+
+  // Fallback 1: BigDataCloud Reverse Geocoding
+  const bdc = await fetchBigDataCloudReverse(lat, lng);
+  if (bdc && bdc.address && !isRawCoordinate(bdc.address)) {
+    setCache(cacheKey, bdc);
+    return bdc;
+  }
+
+  // Fallback 2: Nearest reference city
+  const fallback = getNearestReferenceCity(lat, lng);
+  setCache(cacheKey, fallback);
+  return fallback;
 }
 
 /**
@@ -315,57 +419,84 @@ async function geocodeSearch(query) {
 
 /**
  * IP-based geolocation fallback when browser GPS is blocked/unsupported.
+ * Supports passing client public IP from proxy headers.
+ * Avoids returning overseas cloud datacenter IPs (like Oregon).
  */
-async function getIpLocation() {
-  const providers = [
-    async () => {
-      const res = await fetch('https://ipwho.is/', { headers: { 'User-Agent': 'ShareBite/1.0' }, signal: AbortSignal.timeout(3500) });
-      if (!res.ok) throw new Error('ipwho non-200');
-      const data = await res.json();
-      if (data.success === false) throw new Error(data.message || 'ipwho failed');
-      return {
-        lat: data.latitude,
-        lng: data.longitude,
-        city: data.city || data.region,
-        address: `${data.city ? data.city + ', ' : ''}${data.region || ''}, ${data.country || 'India'}`.trim(),
-        country: data.country,
-        source: 'IP Geolocation',
-      };
-    },
-    async () => {
-      const res = await fetch('https://freeipapi.com/api/json', { headers: { 'User-Agent': 'ShareBite/1.0' }, signal: AbortSignal.timeout(3500) });
-      if (!res.ok) throw new Error('freeipapi non-200');
-      const data = await res.json();
-      if (!data.latitude || !data.longitude) throw new Error('no coords');
-      return {
-        lat: data.latitude,
-        lng: data.longitude,
-        city: data.cityName || data.regionName,
-        address: `${data.cityName ? data.cityName + ', ' : ''}${data.regionName || ''}, ${data.countryName || 'India'}`.trim(),
-        country: data.countryName,
-        source: 'IP Geolocation',
-      };
-    },
-  ];
+async function getIpLocation(clientIp = '') {
+  const isPrivate = !clientIp ||
+    clientIp.includes('127.0.0.1') ||
+    clientIp === '::1' ||
+    clientIp.startsWith('192.168.') ||
+    clientIp.startsWith('10.') ||
+    clientIp.startsWith('172.16.') ||
+    clientIp.startsWith('172.31.') ||
+    clientIp.startsWith('fe80::');
 
-  for (const provider of providers) {
+  const targetIp = isPrivate ? '' : clientIp.trim();
+
+  // If a valid public client IP is provided, query IP provider with that IP
+  if (targetIp) {
     try {
-      const result = await provider();
-      if (result && Number.isFinite(result.lat) && Number.isFinite(result.lng)) {
-        return result;
+      const res = await fetch(`https://ipwho.is/${targetIp}`, {
+        headers: { 'User-Agent': 'ShareBite/1.0' },
+        signal: AbortSignal.timeout(3500)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && Number.isFinite(data.latitude) && Number.isFinite(data.longitude)) {
+          const city = data.city || data.region || 'Local Area';
+          const address = [data.city, data.region, data.country].filter(Boolean).join(', ') || city;
+          return {
+            lat: data.latitude,
+            lng: data.longitude,
+            city,
+            address,
+            country: data.country,
+            source: 'Client IP Geolocation',
+          };
+        }
       }
-    } catch (err) {
-      // Continue to next provider
+    } catch (e) {
+      console.warn('[IP Location] Client IP lookup failed:', e.message);
     }
   }
 
-  // Fallback to default center (Bengaluru) if IP service fails
+  // If running locally, check IP of current connection
+  if (!targetIp) {
+    try {
+      const res = await fetch('https://ipwho.is/', {
+        headers: { 'User-Agent': 'ShareBite/1.0' },
+        signal: AbortSignal.timeout(3500)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        // Only accept if within India; if server is in AWS/cloud US (e.g. Oregon), reject and fall back to New Delhi
+        if (data.success && data.country_code === 'IN' && Number.isFinite(data.latitude) && Number.isFinite(data.longitude)) {
+          const city = data.city || data.region || 'Local Area';
+          const address = [data.city, data.region, data.country].filter(Boolean).join(', ') || city;
+          return {
+            lat: data.latitude,
+            lng: data.longitude,
+            city,
+            address,
+            country: data.country,
+            source: 'Local IP Geolocation',
+          };
+        }
+      }
+    } catch {
+      // Fall through to default
+    }
+  }
+
+  // Safe Indian default fallback (avoid foreign AWS/cloud datacenter coordinates)
   return {
-    lat: 12.9611,
-    lng: 77.6387,
-    city: 'Bengaluru',
-    address: 'Bengaluru, Karnataka, India',
-    source: 'Default Fallback',
+    lat: 28.6315,
+    lng: 77.2167,
+    city: 'New Delhi',
+    address: 'Connaught Place, New Delhi, India',
+    country: 'India',
+    source: 'Default Location',
   };
 }
 

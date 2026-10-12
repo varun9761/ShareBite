@@ -421,9 +421,13 @@ app.get('/api/geocode/search', async (req, res, next) => {
   }
 });
 
-app.get('/api/geocode/ip', async (_req, res, next) => {
+app.get('/api/geocode/ip', async (req, res, next) => {
   try {
-    const location = await getIpLocation();
+    const rawForwarded = req.headers['x-forwarded-for'];
+    const clientIp = typeof rawForwarded === 'string'
+      ? rawForwarded.split(',')[0].trim()
+      : req.socket?.remoteAddress || '';
+    const location = await getIpLocation(clientIp);
     res.json(location);
   } catch (error) {
     next(error);

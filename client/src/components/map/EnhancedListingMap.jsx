@@ -8,6 +8,7 @@ import {
   userLocationIcon,
   generateWhatsAppShareUrl,
   getGoogleMapsDirectionsUrl,
+  formatLocationDisplay,
 } from '../../api/client'
 import { Navigation, Phone, Utensils, MessageCircle, ExternalLink, Route } from 'lucide-react'
 
@@ -117,7 +118,7 @@ export function EnhancedListingMap({
           <Popup>
             <div className="p-1 text-xs">
               <strong className="block text-sm font-black text-blue-600">📍 You Are Here</strong>
-              <p className="mt-1 text-slate-700 font-medium">{userLocation.address}</p>
+              <p className="mt-1 text-slate-700 font-medium">{formatLocationDisplay(userLocation.address)}</p>
               {userLocation.isLiveGPS && (
                 <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-blue-700">
                   ✓ Precise GPS Active
