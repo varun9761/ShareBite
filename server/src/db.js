@@ -1019,6 +1019,121 @@ const db = {
     return newNgo;
   },
 
+  async listAllAdminNGOs() {
+    const list = [];
+    // 1. Registered NGO accounts from users table (role = 'claimer')
+    let claimerUsers = [];
+    if (usePostgres) {
+      const res = await pool.query("SELECT * FROM users WHERE role = 'claimer' ORDER BY created_at DESC;");
+      claimerUsers = res.rows.map(formatUser);
+    } else {
+      claimerUsers = fallbackStore.users.filter((u) => u.role === 'claimer').map(formatUser);
+    }
+
+    for (const u of claimerUsers) {
+      list.push({
+        id: u.id,
+        name: u.name,
+        cause: 'Registered NGO / Food Recovery Volunteer',
+        address: u.address || 'Registered Hub Address',
+        coordinates: u.coordinates,
+        contactPhone: u.phone,
+        contactEmail: u.email,
+        verified: Boolean(u.verified),
+        source: 'Registered Partner Account',
+        type: 'registered_user',
+        createdAt: u.createdAt,
+      });
+    }
+
+    // 2. Partner NGO relief shelters from ngos table
+    let ngoShelters = [];
+    if (usePostgres) {
+      const res = await pool.query('SELECT * FROM ngos ORDER BY created_at DESC;');
+      ngoShelters = res.rows;
+    } else {
+      ngoShelters = fallbackStore.ngos;
+    }
+
+    for (const n of ngoShelters) {
+      const email = n.contact_email || n.contactEmail || '';
+      if (!list.some((item) => item.id === n.id || (email && item.contactEmail === email))) {
+        list.push({
+          id: n.id,
+          name: n.name,
+          cause: n.cause || 'Community Relief Kitchen',
+          address: n.address,
+          coordinates: { lat: Number(n.lat), lng: Number(n.lng) },
+          contactPhone: n.contact_phone || n.contactPhone || '',
+          contactEmail: email,
+          verified: Boolean(n.verified),
+          source: 'NGO Relief Network',
+          type: 'ngo_shelter',
+          capacity: Number(n.capacity) || 500,
+          operatingHours: n.operating_hours || n.operatingHours || '08:00 - 22:00',
+          createdAt: n.created_at || n.createdAt,
+        });
+      }
+    }
+
+    return list;
+  },
+
+  async verifyNGO(id) {
+    if (id.startsWith('user-')) {
+      return this.verifyUser(id);
+    }
+    if (usePostgres) {
+      const res = await pool.query('UPDATE ngos SET verified = true WHERE id = $1 RETURNING *;', [id]);
+      return res.rows[0] || null;
+    }
+    const found = fallbackStore.ngos.find((n) => n.id === id);
+    if (found) found.verified = true;
+    return found || null;
+  },
+
+  async toggleNGOVerification(id) {
+    if (id.startsWith('user-')) {
+      return this.toggleUserVerification(id);
+    }
+    if (usePostgres) {
+      const res = await pool.query('UPDATE ngos SET verified = NOT verified WHERE id = $1 RETURNING *;', [id]);
+      return res.rows[0] || null;
+    }
+    const found = fallbackStore.ngos.find((n) => n.id === id);
+    if (found) found.verified = !found.verified;
+    return found || null;
+  },
+
+  async deleteNGO(id) {
+    if (id.startsWith('user-')) {
+      return this.deleteUser(id);
+    }
+    if (usePostgres) {
+      await pool.query('DELETE FROM ngos WHERE id = $1;', [id]);
+      return true;
+    }
+    const idx = fallbackStore.ngos.findIndex((n) => n.id === id);
+    if (idx !== -1) {
+      fallbackStore.ngos.splice(idx, 1);
+      return true;
+    }
+    return false;
+  },
+
+  async approveAllPending() {
+    if (usePostgres) {
+      await pool.query('UPDATE users SET verified = true WHERE verified = false;');
+      await pool.query('UPDATE ngos SET verified = true WHERE verified = false;');
+      await pool.query('UPDATE donors SET verified = true WHERE verified = false;');
+      return true;
+    }
+    fallbackStore.users.forEach((u) => { u.verified = true; });
+    fallbackStore.ngos.forEach((n) => { n.verified = true; });
+    fallbackStore.donors.forEach((d) => { d.verified = true; });
+    return true;
+  },
+
   // DONATING RESTAURANTS / PLACES
   async listDonors({ lat, lng, radiusKm = 25 } = {}) {
     let list = [];

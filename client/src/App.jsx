@@ -52,6 +52,7 @@ export default function App() {
   const [donorListings, setDonorListings] = useState([])
   const [metrics, setMetrics] = useState(null)
   const [users, setUsers] = useState([])
+  const [adminNgos, setAdminNgos] = useState([])
 
   // Modal & Notification States
   const [modalOpen, setModalOpen] = useState(false)
@@ -98,13 +99,26 @@ export default function App() {
       if (categoryFilter !== 'all') params.set('category', categoryFilter)
       if (searchQuery.trim()) params.set('search', searchQuery.trim())
 
-      const [listingsData, ngosData, donorsData, donorData, metricData, userData] = await Promise.all([
+      // Auto-sync current user profile and verification status if logged in
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('sharebite-token')) {
+        api('/api/auth/me')
+          .then((res) => {
+            if (res?.user) {
+              setCurrentUser(res.user)
+              localStorage.setItem('sharebite-user', JSON.stringify(res.user))
+            }
+          })
+          .catch(() => {})
+      }
+
+      const [listingsData, ngosData, donorsData, donorData, metricData, userData, adminNgosData] = await Promise.all([
         api(`/api/listings?${params}`).catch(() => []),
         api(`/api/ngo/nearby?lat=${lat}&lng=${lng}&radiusKm=${radius}`).catch(() => []),
         api(`/api/donors/nearby?lat=${lat}&lng=${lng}&radiusKm=${radius}`).catch(() => []),
         api('/api/donor/listings').catch(() => []),
         api('/api/admin/metrics').catch(() => null),
         api('/api/admin/users').catch(() => []),
+        api('/api/admin/ngos').catch(() => []),
       ])
 
       setListings(listingsData)
@@ -113,6 +127,7 @@ export default function App() {
       setDonorListings(donorData)
       setMetrics(metricData)
       setUsers(userData)
+      setAdminNgos(adminNgosData)
     } catch (err) {
       console.error('Refresh error:', err)
     } finally {
@@ -367,17 +382,13 @@ export default function App() {
   async function claimFood(id) {
     if (!currentUser) {
       setAuthModalOpen(true)
-      setToast('Please login or register as an NGO/volunteer to claim batches.')
-      return
-    }
-    if (!currentUser.verified && currentUser.role !== 'admin') {
-      setToast('⏳ Verification Pending: An admin must verify your NGO before you can claim batches.')
+      setToast('Please login or register to claim surplus batches.')
       return
     }
     try {
       const listing = await api(`/api/listings/${id}/claim`, { method: 'POST' })
       setClaimModalListing(listing)
-      setToast(`Claimed! Your Pickup OTP is ${listing.otp}`)
+      setToast(`🎉 Batch Claimed! Your Pickup OTP is ${listing.otp}`)
       await refresh()
     } catch (err) {
       setToast(`Error: ${err.message}`)
@@ -413,7 +424,47 @@ export default function App() {
   async function toggleVerifyPartner(id) {
     try {
       await api(`/api/admin/users/${id}/toggle-verify`, { method: 'POST' })
-      setToast('Partner verification status toggled!')
+      setToast('Partner verification status updated!')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function verifyNGOAdmin(id) {
+    try {
+      await api(`/api/admin/ngos/${id}/verify`, { method: 'POST' })
+      setToast('NGO credentials successfully approved!')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function toggleVerifyNGOAdmin(id) {
+    try {
+      await api(`/api/admin/ngos/${id}/toggle-verify`, { method: 'POST' })
+      setToast('NGO verification status updated!')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function deleteNGOAdmin(id) {
+    try {
+      await api(`/api/admin/ngos/${id}`, { method: 'DELETE' })
+      setToast('NGO removed from network.')
+      await refresh()
+    } catch (err) {
+      setToast(`Error: ${err.message}`)
+    }
+  }
+
+  async function approveAllPendingAdmin() {
+    try {
+      await api('/api/admin/approve-all', { method: 'POST' })
+      setToast('🎉 All pending partners & NGOs have been approved!')
       await refresh()
     } catch (err) {
       setToast(`Error: ${err.message}`)
@@ -581,9 +632,14 @@ export default function App() {
                 users={users}
                 listings={listings}
                 ngos={ngos}
+                adminNgos={adminNgos}
                 onVerify={verifyPartner}
                 onToggleVerify={toggleVerifyPartner}
                 onDeleteUser={deleteUserAdmin}
+                onVerifyNGO={verifyNGOAdmin}
+                onToggleVerifyNGO={toggleVerifyNGOAdmin}
+                onDeleteNGO={deleteNGOAdmin}
+                onApproveAllPending={approveAllPendingAdmin}
                 onDeleteListing={deleteListingAdmin}
                 onUpdateListingStatus={updateListingStatusAdmin}
                 onExtendListing={extendListingAdmin}

@@ -106,7 +106,39 @@ app.post('/api/auth/register', async (req, res, next) => {
       phone,
     });
 
+    if (role === 'claimer') {
+      try {
+        await db.registerNGO({
+          name,
+          cause: 'Community Surplus Food Rescue & Redistribution',
+          address: address || 'Registered Hub Address',
+          coordinates,
+          contactPhone: phone,
+          contactEmail: email,
+          capacity: 500,
+          operatingHours: '08:00 - 22:00',
+        });
+      } catch (ngoErr) {
+        console.warn('[Register NGO Mirror] Notice:', ngoErr.message);
+      }
+    }
+
     res.status(201).json({ user, token: signUser(user) });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.get('/api/auth/me', async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: 'Not authenticated' });
+    }
+    const safeUser = await db.findUserById(req.user.id);
+    if (!safeUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json({ user: safeUser });
   } catch (error) {
     next(error);
   }
@@ -243,13 +275,7 @@ app.get('/api/donor/listings', async (req, res, next) => {
 
 app.post('/api/listings/:id/claim', async (req, res, next) => {
   try {
-    if (req.user && !req.user.verified && req.user.role !== 'admin') {
-      return res.status(403).json({
-        message: 'Account pending admin verification. An administrator must verify your NGO account before you can claim surplus food.',
-      });
-    }
-
-    const claimer = req.user || { name: req.body.claimerName || 'Hope Meals Network', id: 'user-ngo-1' };
+    const claimer = req.user || { name: req.body.claimerName || 'Community Claimer', id: 'user-claimer-direct' };
     const listing = await db.claimListing(req.params.id, claimer);
     if (!listing) {
       return res.status(404).json({ message: 'Listing not found.' });
@@ -478,6 +504,55 @@ app.delete('/api/admin/users/:id', async (req, res, next) => {
     const success = await db.deleteUser(req.params.id);
     if (!success) return res.status(404).json({ message: 'User not found.' });
     res.json({ success: true, message: 'User removed from network.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// --- ADMIN NGO VERIFICATION & GOVERNANCE ---
+app.get('/api/admin/ngos', async (_req, res, next) => {
+  try {
+    const ngos = await db.listAllAdminNGOs();
+    res.json(ngos);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/ngos/:id/verify', async (req, res, next) => {
+  try {
+    const result = await db.verifyNGO(req.params.id);
+    if (!result) return res.status(404).json({ message: 'NGO not found.' });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/ngos/:id/toggle-verify', async (req, res, next) => {
+  try {
+    const result = await db.toggleNGOVerification(req.params.id);
+    if (!result) return res.status(404).json({ message: 'NGO not found.' });
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.delete('/api/admin/ngos/:id', async (req, res, next) => {
+  try {
+    const success = await db.deleteNGO(req.params.id);
+    if (!success) return res.status(404).json({ message: 'NGO not found.' });
+    res.json({ success: true, message: 'NGO deleted from network.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+app.post('/api/admin/approve-all', async (_req, res, next) => {
+  try {
+    await db.approveAllPending();
+    res.json({ success: true, message: 'All pending donors and NGOs verified successfully.' });
   } catch (error) {
     next(error);
   }

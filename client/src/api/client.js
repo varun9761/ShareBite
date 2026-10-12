@@ -52,9 +52,11 @@ export const statusBadgeTone = {
 
 export async function api(path, options = {}) {
   const url = `${API_BASE}${path}`
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('sharebite-token') : null
   const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
     ...options,
